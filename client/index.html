@@ -2,7 +2,6 @@
 <html lang="en">
 
 <head>
-
     <meta charset="UTF-8">
 
     <meta
@@ -10,16 +9,11 @@
         content="width=device-width, initial-scale=1.0"
     >
 
-    <meta
-        name="theme-color"
-        content="#101820"
-    >
+    <meta name="theme-color" content="#101820">
 
     <title>ECHO ISLES RPG</title>
 
-    <!-- =================================
-         STYLESHEETS
-    ================================== -->
+    <!-- STYLESHEETS -->
 
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/ui.css">
@@ -40,21 +34,10 @@
 
         <p>Fantasy MMORPG Adventure</p>
 
-        <button id="start-game">
-            START GAME
-        </button>
-
-        <button id="create-character">
-            CREATE CHARACTER
-        </button>
-
-        <button id="settings-button">
-            SETTINGS
-        </button>
-
-        <button id="account-button">
-            ACCOUNT
-        </button>
+        <button id="start-game">START GAME</button>
+        <button id="create-character">CREATE CHARACTER</button>
+        <button id="settings-button">SETTINGS</button>
+        <button id="account-button">ACCOUNT</button>
 
     </main>
 
@@ -86,9 +69,7 @@
                     required
                 >
 
-                <button type="submit">
-                    LOGIN
-                </button>
+                <button type="submit">LOGIN</button>
 
             </form>
 
@@ -117,9 +98,7 @@
                     required
                 >
 
-                <button type="submit">
-                    REGISTER
-                </button>
+                <button type="submit">REGISTER</button>
 
             </form>
 
@@ -130,20 +109,15 @@
             <h3>ACCOUNT PROFILE</h3>
 
             <p id="profile-username"></p>
-
             <p id="profile-email"></p>
 
-            <button id="logout-button">
-                LOGOUT
-            </button>
+            <button id="logout-button">LOGOUT</button>
 
         </div>
 
         <p id="account-message"></p>
 
-        <button id="account-back">
-            BACK
-        </button>
+        <button id="account-back">BACK</button>
 
     </section>
 
@@ -173,7 +147,6 @@
             >
 
             <select id="character-race" required>
-
                 <option value="">Select Race</option>
                 <option value="Human">Human</option>
                 <option value="Elf">Elf</option>
@@ -181,19 +154,15 @@
                 <option value="Dwarf">Dwarf</option>
                 <option value="Beastkin">Beastkin</option>
                 <option value="Dragonkin">Dragonkin</option>
-
             </select>
 
             <select id="character-gender" required>
-
                 <option value="">Select Gender</option>
                 <option value="Male">Male</option>
                 <option value="Female">Female</option>
-
             </select>
 
             <select id="character-job" required>
-
                 <option value="Adventurer">Adventurer</option>
                 <option value="Swordsman">Swordsman</option>
                 <option value="Knight">Knight</option>
@@ -201,7 +170,6 @@
                 <option value="Mage">Mage</option>
                 <option value="Assassin">Assassin</option>
                 <option value="Priest">Priest</option>
-
             </select>
 
             <button
@@ -213,19 +181,15 @@
 
         </form>
 
-        <button id="character-back">
-            BACK
-        </button>
+        <button id="character-back">BACK</button>
 
     </section>
 
     <!-- =================================
-         GAME WORLD SCREEN
+         GAME WORLD
     ================================== -->
 
     <section id="game-screen" hidden>
-
-        <!-- WORLD HEADER -->
 
         <header class="world-header">
 
@@ -245,74 +209,52 @@
 
             </div>
 
-            <!-- PLAYER STATUS -->
-
             <div class="world-status">
 
                 <div class="world-status-row">
 
-                    <span class="world-status-label">
-                        HP
-                    </span>
+                    <span class="world-status-label">HP</span>
 
                     <div class="world-bar">
-
                         <div
                             id="world-hp-bar"
                             class="world-bar-fill"
                         ></div>
-
                     </div>
 
-                    <span id="world-hp-text">
-                        100/100
-                    </span>
+                    <span id="world-hp-text">100/100</span>
 
                 </div>
 
                 <div class="world-status-row">
 
-                    <span class="world-status-label">
-                        MP
-                    </span>
+                    <span class="world-status-label">MP</span>
 
                     <div class="world-bar">
-
                         <div
                             id="world-mp-bar"
                             class="world-bar-fill"
                         ></div>
-
                     </div>
 
-                    <span id="world-mp-text">
-                        100/100
-                    </span>
+                    <span id="world-mp-text">100/100</span>
 
                 </div>
 
                 <div class="world-bar">
-
                     <div
                         id="world-exp-bar"
                         class="world-bar-fill"
                     ></div>
-
                 </div>
 
             </div>
 
-            <button id="leave-world">
-                LEAVE
-            </button>
+            <button id="leave-world">LEAVE</button>
 
         </header>
 
-        <!-- WORLD CONTENT -->
-
         <div class="world-content">
-
-            <!-- MAP -->
 
             <main class="world-main">
 
@@ -328,37 +270,16 @@
 
             </main>
 
-            <!-- GAME MENU -->
-
             <aside class="world-sidebar">
 
-                <button id="inventory-button">
-                    INVENTORY
-                </button>
-
-                <button id="equipment-button">
-                    EQUIPMENT
-                </button>
-
-                <button id="skills-button">
-                    SKILLS
-                </button>
-
-                <button id="quests-button">
-                    QUESTS
-                </button>
-
-                <button id="professions-button">
-                    PROFESSIONS
-                </button>
-
-                <button id="guild-button">
-                    GUILD
-                </button>
+                <button id="inventory-button">INVENTORY</button>
+                <button id="equipment-button">EQUIPMENT</button>
+                <button id="skills-button">SKILLS</button>
+                <button id="quests-button">QUESTS</button>
+                <button id="professions-button">PROFESSIONS</button>
+                <button id="guild-button">GUILD</button>
 
             </aside>
-
-            <!-- CHAT -->
 
             <aside class="world-chat">
 
@@ -379,9 +300,7 @@
                         required
                     >
 
-                    <button type="submit">
-                        SEND
-                    </button>
+                    <button type="submit">SEND</button>
 
                 </form>
 
@@ -389,13 +308,9 @@
 
         </div>
 
-        <!-- WORLD FOOTER -->
-
         <footer class="world-footer">
 
-            <span>
-                ECHO ISLES MMORPG
-            </span>
+            <span>ECHO ISLES MMORPG</span>
 
             <span id="world-player-count">
                 Players Online: 0
@@ -405,35 +320,29 @@
 
     </section>
 
-    <!-- =================================
-         SERVER STATUS
-    ================================== -->
+    <!-- SERVER STATUS -->
 
     <div id="server-status">
         Checking server...
     </div>
 
     <!-- =================================
-         SOCKET.IO
+         GAME SCRIPTS
     ================================== -->
 
     <script src="/socket.io/socket.io.js"></script>
 
-    <!-- =================================
-         GAME CONFIGURATION
-    ================================== -->
-
     <script src="js/config.js"></script>
-
-    <!-- =================================
-         GAME SYSTEMS
-    ================================== -->
 
     <script src="js/auth.js"></script>
 
     <script src="js/characters.js"></script>
 
     <script src="js/main.js"></script>
+
+    <!-- WORLD RENDERER -->
+
+    <script src="js/world-renderer.js"></script>
 
     <script src="js/character-ui.js"></script>
 
@@ -445,305 +354,247 @@
 
     "use strict";
 
-    document.addEventListener(
-        "DOMContentLoaded",
-        () => {
+    document.addEventListener("DOMContentLoaded", () => {
 
-            const $ = id =>
-                document.getElementById(id);
+        const $ = id => document.getElementById(id);
 
-            /* =================================
-               MAIN MENU
-            ================================== */
+        /* MAIN MENU */
 
-            $("start-game").addEventListener(
-                "click",
-                () => {
+        $("start-game").addEventListener("click", () => {
 
-                    if (!window.ECHO_AUTH.isLoggedIn()) {
+            if (!window.ECHO_AUTH.isLoggedIn()) {
 
-                        $("account-panel").hidden = false;
+                $("account-panel").hidden = false;
+                $("main-menu").hidden = true;
 
-                        $("main-menu").hidden = true;
+                return;
 
-                        return;
+            }
 
-                    }
+            window.ECHO_CHARACTER_UI.open();
 
-                    window.ECHO_CHARACTER_UI.open();
+        });
 
-                }
-            );
+        $("create-character").addEventListener("click", () => {
 
-            $("create-character").addEventListener(
-                "click",
-                () => {
+            if (!window.ECHO_AUTH.isLoggedIn()) {
 
-                    if (!window.ECHO_AUTH.isLoggedIn()) {
+                $("account-panel").hidden = false;
+                $("main-menu").hidden = true;
 
-                        $("account-panel").hidden = false;
+                return;
 
-                        $("main-menu").hidden = true;
+            }
 
-                        return;
+            window.ECHO_CHARACTER_UI.open();
 
-                    }
+        });
 
-                    window.ECHO_CHARACTER_UI.open();
+        $("account-button").addEventListener("click", () => {
 
-                }
-            );
+            $("main-menu").hidden = true;
+            $("account-panel").hidden = false;
 
-            $("account-button").addEventListener(
-                "click",
-                () => {
+        });
 
-                    $("main-menu").hidden = true;
+        $("account-back").addEventListener("click", () => {
 
-                    $("account-panel").hidden = false;
+            $("account-panel").hidden = true;
+            $("main-menu").hidden = false;
 
-                }
-            );
+        });
 
-            $("account-back").addEventListener(
-                "click",
-                () => {
+        /* LOGIN */
 
-                    $("account-panel").hidden = true;
+        $("login-form").addEventListener("submit", async event => {
 
-                    $("main-menu").hidden = false;
+            event.preventDefault();
 
-                }
-            );
+            try {
 
-            /* =================================
-               ACCOUNT LOGIN
-            ================================== */
-
-            $("login-form").addEventListener(
-                "submit",
-                async event => {
-
-                    event.preventDefault();
-
-                    try {
-
-                        await window.ECHO_AUTH.login(
-                            $("login-username").value,
-                            $("login-password").value
-                        );
-
-                        $("account-message").textContent =
-                            "Login successful!";
-
-                        $("login-form").reset();
-
-                    } catch (error) {
-
-                        $("account-message").textContent =
-                            error.message;
-
-                    }
-
-                }
-            );
-
-            /* =================================
-               ACCOUNT REGISTER
-            ================================== */
-
-            $("register-form").addEventListener(
-                "submit",
-                async event => {
-
-                    event.preventDefault();
-
-                    try {
-
-                        await window.ECHO_AUTH.register({
-
-                            username:
-                                $("register-username").value,
-
-                            email:
-                                $("register-email").value,
-
-                            password:
-                                $("register-password").value
-
-                        });
-
-                        $("account-message").textContent =
-                            "Registration successful!";
-
-                        $("register-form").reset();
-
-                    } catch (error) {
-
-                        $("account-message").textContent =
-                            error.message;
-
-                    }
-
-                }
-            );
-
-            /* =================================
-               LOGOUT
-            ================================== */
-
-            $("logout-button").addEventListener(
-                "click",
-                () => {
-
-                    window.ECHO_AUTH.logout();
-
-                    $("account-profile").hidden = true;
-
-                    $("account-forms").hidden = false;
-
-                    $("account-message").textContent =
-                        "Logged out.";
-
-                }
-            );
-
-            /* =================================
-               ENTER WORLD EVENT
-            ================================== */
-
-            document.addEventListener(
-                "echo:world-entered",
-                event => {
-
-                    const player =
-                        event.detail?.player ||
-                        window.ECHO_GAME.player;
-
-                    if (!player) return;
-
-                    $("main-menu").hidden = true;
-
-                    $("account-panel").hidden = true;
-
-                    $("character-panel").hidden = true;
-
-                    $("game-screen").hidden = false;
-
-                    $("world-player-name").textContent =
-                        player.name || "Player";
-
-                    $("world-player-level").textContent =
-                        "Level " + (player.level || 1);
-
-                    $("world-player-job").textContent =
-                        player.job || "Adventurer";
-
-                    $("world-hp-text").textContent =
-                        (player.hp || 0) + "/100";
-
-                    $("world-mp-text").textContent =
-                        (player.mp || 0) + "/100";
-
-                    $("world-hp-bar").style.width =
-                        Math.min(100, player.hp || 0) + "%";
-
-                    $("world-mp-bar").style.width =
-                        Math.min(100, player.mp || 0) + "%";
-
-                    $("map-name").textContent =
-                        player.map || "Echo Isles";
-
-                }
-            );
-
-            /* =================================
-               CHAT
-            ================================== */
-
-            $("chat-form").addEventListener(
-                "submit",
-                event => {
-
-                    event.preventDefault();
-
-                    const message =
-                        $("chat-input").value.trim();
-
-                    if (!message) return;
-
-                    const socket =
-                        window.ECHO_GAME?.network?.socket;
-
-                    if (!socket || !socket.connected) {
-
-                        return;
-
-                    }
-
-                    socket.emit("chat:send", {
-                        message
-                    });
-
-                    $("chat-input").value = "";
-
-                }
-            );
-
-            /* =================================
-               GAME MENU BUTTONS
-            ================================== */
-
-            [
-                "inventory-button",
-                "equipment-button",
-                "skills-button",
-                "quests-button",
-                "professions-button",
-                "guild-button"
-            ].forEach(id => {
-
-                $(id).addEventListener(
-                    "click",
-                    () => {
-
-                        alert(
-                            "This feature is under development."
-                        );
-
-                    }
+                await window.ECHO_AUTH.login(
+                    $("login-username").value,
+                    $("login-password").value
                 );
+
+                $("account-message").textContent =
+                    "Login successful!";
+
+                $("login-form").reset();
+
+            } catch (error) {
+
+                $("account-message").textContent =
+                    error.message;
+
+            }
+
+        });
+
+        /* REGISTER */
+
+        $("register-form").addEventListener("submit", async event => {
+
+            event.preventDefault();
+
+            try {
+
+                await window.ECHO_AUTH.register({
+
+                    username: $("register-username").value,
+                    email: $("register-email").value,
+                    password: $("register-password").value
+
+                });
+
+                $("account-message").textContent =
+                    "Registration successful!";
+
+                $("register-form").reset();
+
+            } catch (error) {
+
+                $("account-message").textContent =
+                    error.message;
+
+            }
+
+        });
+
+        /* LOGOUT */
+
+        $("logout-button").addEventListener("click", () => {
+
+            window.ECHO_AUTH.logout();
+
+            $("account-profile").hidden = true;
+            $("account-forms").hidden = false;
+
+            $("account-message").textContent =
+                "Logged out.";
+
+        });
+
+        /* ENTER WORLD */
+
+        document.addEventListener("echo:world-entered", event => {
+
+            const player =
+                event.detail?.player ||
+                window.ECHO_GAME.player;
+
+            if (!player) return;
+
+            $("main-menu").hidden = true;
+            $("account-panel").hidden = true;
+            $("character-panel").hidden = true;
+            $("game-screen").hidden = false;
+
+            $("world-player-name").textContent =
+                player.name || "Player";
+
+            $("world-player-level").textContent =
+                "Level " + (player.level || 1);
+
+            $("world-player-job").textContent =
+                player.job || "Adventurer";
+
+            $("world-hp-text").textContent =
+                (player.hp ?? 100) + "/100";
+
+            $("world-mp-text").textContent =
+                (player.mp ?? 100) + "/100";
+
+            $("world-hp-bar").style.width =
+                Math.min(100, player.hp ?? 100) + "%";
+
+            $("world-mp-bar").style.width =
+                Math.min(100, player.mp ?? 100) + "%";
+
+            $("map-name").textContent =
+                player.map || "Echo Isles";
+
+            if (window.ECHO_RENDERER) {
+
+                window.ECHO_RENDERER.updatePlayer({
+
+                    x: player.x,
+                    y: player.y,
+                    name: player.name
+
+                });
+
+                window.ECHO_RENDERER.start();
+
+            }
+
+        });
+
+        /* CHAT */
+
+        $("chat-form").addEventListener("submit", event => {
+
+            event.preventDefault();
+
+            const message =
+                $("chat-input").value.trim();
+
+            if (!message) return;
+
+            const socket =
+                window.ECHO_GAME?.network?.socket;
+
+            if (!socket || !socket.connected) return;
+
+            socket.emit("chat:send", { message });
+
+            $("chat-input").value = "";
+
+        });
+
+        /* GAME MENU */
+
+        [
+            "inventory-button",
+            "equipment-button",
+            "skills-button",
+            "quests-button",
+            "professions-button",
+            "guild-button"
+        ].forEach(id => {
+
+            $(id).addEventListener("click", () => {
+
+                alert("This feature is under development.");
 
             });
 
-            /* =================================
-               LEAVE WORLD
-            ================================== */
+        });
 
-            $("leave-world").addEventListener(
-                "click",
-                () => {
+        /* LEAVE WORLD */
 
-                    if (window.ECHO_GAME?.network?.socket) {
+        $("leave-world").addEventListener("click", () => {
 
-                        window.ECHO_GAME.network.socket.disconnect();
+            if (window.ECHO_RENDERER) {
+                window.ECHO_RENDERER.stop();
+            }
 
-                        window.ECHO_GAME.network.socket = null;
+            if (window.ECHO_GAME?.network?.socket) {
 
-                    }
+                window.ECHO_GAME.network.socket.disconnect();
 
-                    $("game-screen").hidden = true;
+                window.ECHO_GAME.network.socket = null;
 
-                    $("main-menu").hidden = false;
+            }
 
-                }
-            );
+            $("game-screen").hidden = true;
+            $("main-menu").hidden = false;
 
-        }
-    );
+        });
+
+    });
 
     </script>
 
 </body>
-
-                                </html>
+        </html>
