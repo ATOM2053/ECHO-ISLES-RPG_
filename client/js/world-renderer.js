@@ -1,7 +1,7 @@
 /* =========================================
    ECHO ISLES RPG
-   WORLD RENDERER
-   Version: 1.1.0
+   PIXEL WORLD RENDERER
+   Version: 2.0.0
 ========================================= */
 
 "use strict";
@@ -18,17 +18,36 @@ window.ECHO_WORLD_RENDERER = (() => {
         grass: "#477c43",
         grassDark: "#3c6d39",
         grassLight: "#568c4c",
+
         path: "#9b8057",
         pathDark: "#806746",
+        pathLight: "#b29669",
+
         water: "#326f9b",
         waterLight: "#4b91b5",
+        waterDark: "#245779",
+
         tree: "#285333",
         treeLight: "#3e7545",
-        player: "#f2d28a",
-        playerDark: "#a96b45",
-        remotePlayer: "#8ac8ff",
-        remoteDark: "#4679bd",
+        treeDark: "#193c29",
+
+        trunk: "#795333",
+
+        playerSkin: "#f2d28a",
+        playerHair: "#593c2b",
+        playerClothes: "#a96b45",
+        playerDark: "#75452f",
+
+        remoteSkin: "#8ac8ff",
+        remoteHair: "#354b76",
+        remoteClothes: "#4679bd",
+
         text: "#ffffff"
+    };
+
+    const WORLD = {
+        mapName: "starting_village",
+        renderDistance: 2
     };
 
     // ======================================
@@ -41,12 +60,15 @@ window.ECHO_WORLD_RENDERER = (() => {
     let animationFrame = null;
     let running = false;
 
+    let lastFrameTime = 0;
+
     let player = {
         id: null,
         x: 400,
         y: 300,
         name: "Player",
-        direction: "down"
+        direction: "down",
+        moving: false
     };
 
     // ======================================
@@ -109,11 +131,7 @@ window.ECHO_WORLD_RENDERER = (() => {
         );
     }
 
-    // ======================================
-    // RANDOM MAP
-    // ======================================
-
-    function seededRandom(x, y) {
+    function random(x, y) {
 
         let value =
             Math.sin(x * 127.1 + y * 311.7) *
@@ -122,9 +140,13 @@ window.ECHO_WORLD_RENDERER = (() => {
         return value - Math.floor(value);
     }
 
+    // ======================================
+    // MAP GENERATION
+    // ======================================
+
     function getTileType(x, y) {
 
-        // Water area
+        // Lake
 
         if (
             x >= 4 &&
@@ -135,7 +157,7 @@ window.ECHO_WORLD_RENDERER = (() => {
             return "water";
         }
 
-        // Main path
+        // Main road
 
         if (
             Math.abs(x - 15) <= 1 ||
@@ -144,7 +166,7 @@ window.ECHO_WORLD_RENDERER = (() => {
             return "path";
         }
 
-        // Diagonal path
+        // Diagonal road
 
         if (Math.abs(x - y) <= 1) {
             return "path";
@@ -152,9 +174,7 @@ window.ECHO_WORLD_RENDERER = (() => {
 
         // Trees
 
-        const random = seededRandom(x, y);
-
-        if (random > 0.88) {
+        if (random(x, y) > 0.88) {
             return "tree";
         }
 
@@ -162,164 +182,292 @@ window.ECHO_WORLD_RENDERER = (() => {
     }
 
     // ======================================
+    // DRAW GRASS
+    // ======================================
+
+    function drawGrass(px, py, x, y) {
+
+        ctx.fillStyle = COLORS.grass;
+
+        ctx.fillRect(
+            px,
+            py,
+            TILE_SIZE,
+            TILE_SIZE
+        );
+
+        const value = random(x, y);
+
+        if (value > 0.5) {
+
+            ctx.fillStyle = COLORS.grassLight;
+
+            ctx.fillRect(
+                px + 7,
+                py + 8,
+                3,
+                3
+            );
+
+            ctx.fillRect(
+                px + 21,
+                py + 20,
+                2,
+                2
+            );
+
+        }
+
+        if (value < 0.3) {
+
+            ctx.fillStyle = COLORS.grassDark;
+
+            ctx.fillRect(
+                px + 18,
+                py + 7,
+                4,
+                3
+            );
+
+        }
+
+    }
+
+    // ======================================
+    // DRAW PATH
+    // ======================================
+
+    function drawPath(px, py, x, y) {
+
+        ctx.fillStyle = COLORS.path;
+
+        ctx.fillRect(
+            px,
+            py,
+            TILE_SIZE,
+            TILE_SIZE
+        );
+
+        const value = random(x, y);
+
+        ctx.fillStyle = COLORS.pathDark;
+
+        if (value > 0.5) {
+
+            ctx.fillRect(
+                px + 5,
+                py + 8,
+                5,
+                3
+            );
+
+        }
+
+        ctx.fillStyle = COLORS.pathLight;
+
+        if (value < 0.35) {
+
+            ctx.fillRect(
+                px + 20,
+                py + 22,
+                4,
+                3
+            );
+
+        }
+
+    }
+
+    // ======================================
+    // DRAW WATER
+    // ======================================
+
+    function drawWater(px, py, x, y, time) {
+
+        ctx.fillStyle = COLORS.water;
+
+        ctx.fillRect(
+            px,
+            py,
+            TILE_SIZE,
+            TILE_SIZE
+        );
+
+        ctx.fillStyle = COLORS.waterDark;
+
+        ctx.fillRect(
+            px,
+            py + 26,
+            TILE_SIZE,
+            6
+        );
+
+        const wave =
+            Math.floor(time / 500) % 2;
+
+        ctx.fillStyle = COLORS.waterLight;
+
+        ctx.fillRect(
+            px + 5 + wave * 2,
+            py + 10,
+            12,
+            3
+        );
+
+        ctx.fillRect(
+            px + 19 - wave * 2,
+            py + 21,
+            8,
+            2
+        );
+
+    }
+
+    // ======================================
+    // DRAW TREE
+    // ======================================
+
+    function drawTree(px, py) {
+
+        // Ground
+
+        ctx.fillStyle = COLORS.grass;
+
+        ctx.fillRect(
+            px,
+            py,
+            TILE_SIZE,
+            TILE_SIZE
+        );
+
+        // Shadow
+
+        ctx.fillStyle = "rgba(0,0,0,0.28)";
+
+        ctx.fillRect(
+            px + 4,
+            py + 22,
+            25,
+            7
+        );
+
+        // Trunk
+
+        ctx.fillStyle = COLORS.trunk;
+
+        ctx.fillRect(
+            px + 13,
+            py + 18,
+            7,
+            13
+        );
+
+        // Leaves
+
+        ctx.fillStyle = COLORS.treeDark;
+
+        ctx.fillRect(
+            px + 8,
+            py + 7,
+            17,
+            17
+        );
+
+        ctx.fillRect(
+            px + 4,
+            py + 12,
+            24,
+            11
+        );
+
+        ctx.fillStyle = COLORS.tree;
+
+        ctx.fillRect(
+            px + 8,
+            py + 5,
+            17,
+            15
+        );
+
+        ctx.fillRect(
+            px + 3,
+            py + 10,
+            26,
+            10
+        );
+
+        // Light
+
+        ctx.fillStyle = COLORS.treeLight;
+
+        ctx.fillRect(
+            px + 10,
+            py + 7,
+            7,
+            6
+        );
+
+        ctx.fillRect(
+            px + 5,
+            py + 12,
+            5,
+            4
+        );
+
+    }
+
+    // ======================================
     // DRAW TILE
     // ======================================
 
-    function drawTile(type, x, y) {
-
-        const px = x * TILE_SIZE;
-        const py = y * TILE_SIZE;
+    function drawTile(
+        type,
+        screenX,
+        screenY,
+        worldX,
+        worldY,
+        time
+    ) {
 
         if (type === "grass") {
 
-            ctx.fillStyle = COLORS.grass;
-            ctx.fillRect(
-                px,
-                py,
-                TILE_SIZE,
-                TILE_SIZE
+            drawGrass(
+                screenX,
+                screenY,
+                worldX,
+                worldY
             );
-
-            const random = seededRandom(x, y);
-
-            if (random > 0.5) {
-
-                ctx.fillStyle = COLORS.grassLight;
-
-                ctx.fillRect(
-                    px + 7,
-                    py + 8,
-                    3,
-                    3
-                );
-
-            }
-
-            if (random < 0.3) {
-
-                ctx.fillStyle = COLORS.grassDark;
-
-                ctx.fillRect(
-                    px + 20,
-                    py + 22,
-                    4,
-                    3
-                );
-
-            }
 
         }
 
         else if (type === "path") {
 
-            ctx.fillStyle = COLORS.path;
-
-            ctx.fillRect(
-                px,
-                py,
-                TILE_SIZE,
-                TILE_SIZE
+            drawPath(
+                screenX,
+                screenY,
+                worldX,
+                worldY
             );
-
-            ctx.fillStyle = COLORS.pathDark;
-
-            if (seededRandom(x, y) > 0.5) {
-
-                ctx.fillRect(
-                    px + 5,
-                    py + 8,
-                    5,
-                    3
-                );
-
-            }
 
         }
 
         else if (type === "water") {
 
-            ctx.fillStyle = COLORS.water;
-
-            ctx.fillRect(
-                px,
-                py,
-                TILE_SIZE,
-                TILE_SIZE
+            drawWater(
+                screenX,
+                screenY,
+                worldX,
+                worldY,
+                time
             );
-
-            ctx.fillStyle = COLORS.waterLight;
-
-            if (seededRandom(x, y) > 0.4) {
-
-                ctx.fillRect(
-                    px + 6,
-                    py + 12,
-                    12,
-                    3
-                );
-
-            }
 
         }
 
         else if (type === "tree") {
 
-            ctx.fillStyle = COLORS.grass;
-
-            ctx.fillRect(
-                px,
-                py,
-                TILE_SIZE,
-                TILE_SIZE
-            );
-
-            // Tree shadow
-
-            ctx.fillStyle = "#24452b";
-
-            ctx.fillRect(
-                px + 5,
-                py + 13,
-                23,
-                16
-            );
-
-            // Tree leaves
-
-            ctx.fillStyle = COLORS.tree;
-
-            ctx.fillRect(
-                px + 7,
-                py + 4,
-                19,
-                18
-            );
-
-            ctx.fillRect(
-                px + 3,
-                py + 9,
-                26,
-                12
-            );
-
-            ctx.fillStyle = COLORS.treeLight;
-
-            ctx.fillRect(
-                px + 10,
-                py + 6,
-                8,
-                7
-            );
-
-            // Tree trunk
-
-            ctx.fillStyle = "#795333";
-
-            ctx.fillRect(
-                px + 13,
-                py + 20,
-                7,
-                10
+            drawTree(
+                screenX,
+                screenY
             );
 
         }
@@ -330,9 +478,11 @@ window.ECHO_WORLD_RENDERER = (() => {
     // DRAW MAP
     // ======================================
 
-    function drawMap() {
+    function drawMap(time) {
 
-        if (!ctx || !canvas) return;
+        if (!ctx || !canvas) {
+            return null;
+        }
 
         const cameraX =
             player.x - canvas.width / 2;
@@ -358,6 +508,8 @@ window.ECHO_WORLD_RENDERER = (() => {
 
             for (let x = startX; x <= endX; x++) {
 
+                // แปลงพิกัดโลกเป็นพิกัดหน้าจอ
+
                 const screenX =
                     x * TILE_SIZE - cameraX;
 
@@ -366,7 +518,14 @@ window.ECHO_WORLD_RENDERER = (() => {
 
                 const type = getTileType(x, y);
 
-                drawTile(type, x, y);
+                drawTile(
+                    type,
+                    Math.floor(screenX),
+                    Math.floor(screenY),
+                    x,
+                    y,
+                    time
+                );
 
             }
 
@@ -380,106 +539,221 @@ window.ECHO_WORLD_RENDERER = (() => {
     }
 
     // ======================================
-    // DRAW PLAYER SPRITE
+    // PIXEL CHARACTER
     // ======================================
 
-    function drawCharacter(
-        x,
-        y,
-        name,
+    function drawPixelCharacter(
+        screenX,
+        screenY,
         isLocal,
-        cameraX,
-        cameraY
+        direction,
+        moving,
+        time
     ) {
 
-        const screenX =
-            x - cameraX;
+        const skin = isLocal
+            ? COLORS.playerSkin
+            : COLORS.remoteSkin;
 
-        const screenY =
-            y - cameraY;
+        const hair = isLocal
+            ? COLORS.playerHair
+            : COLORS.remoteHair;
+
+        const clothes = isLocal
+            ? COLORS.playerClothes
+            : COLORS.remoteClothes;
+
+        const dark = isLocal
+            ? COLORS.playerDark
+            : COLORS.remoteDark;
+
+        // Walking animation
+
+        const frame = moving
+            ? Math.floor(time / 140) % 2
+            : 0;
+
+        const legOffset = frame === 0 ? 0 : 2;
+
+        // Pixel alignment
+
+        const x = Math.floor(screenX);
+        const y = Math.floor(screenY);
 
         // Shadow
 
-        ctx.fillStyle = "rgba(0,0,0,0.3)";
+        ctx.fillStyle = "rgba(0,0,0,0.35)";
 
         ctx.fillRect(
-            screenX - 10,
-            screenY + 8,
-            20,
+            x - 11,
+            y - 2,
+            22,
             6
+        );
+
+        // Legs
+
+        ctx.fillStyle = dark;
+
+        ctx.fillRect(
+            x - 7,
+            y - 10,
+            5,
+            9 + legOffset
+        );
+
+        ctx.fillRect(
+            x + 2,
+            y - 10,
+            5,
+            9 + (frame === 0 ? 2 : 0)
+        );
+
+        // Boots
+
+        ctx.fillStyle = "#302b2a";
+
+        ctx.fillRect(
+            x - 8,
+            y - 3 + legOffset,
+            6,
+            3
+        );
+
+        ctx.fillRect(
+            x + 2,
+            y - 3 + (frame === 0 ? 2 : 0),
+            7,
+            3
         );
 
         // Body
 
-        ctx.fillStyle = isLocal
-            ? COLORS.playerDark
-            : COLORS.remoteDark;
+        ctx.fillStyle = dark;
 
         ctx.fillRect(
-            screenX - 7,
-            screenY - 5,
+            x - 8,
+            y - 23,
+            16,
+            14
+        );
+
+        ctx.fillStyle = clothes;
+
+        ctx.fillRect(
+            x - 7,
+            y - 22,
             14,
-            15
+            11
+        );
+
+        // Arms
+
+        ctx.fillStyle = skin;
+
+        ctx.fillRect(
+            x - 10,
+            y - 21,
+            3,
+            9
+        );
+
+        ctx.fillRect(
+            x + 7,
+            y - 21,
+            3,
+            9
         );
 
         // Head
 
-        ctx.fillStyle = isLocal
-            ? COLORS.player
-            : COLORS.remotePlayer;
+        ctx.fillStyle = skin;
 
         ctx.fillRect(
-            screenX - 6,
-            screenY - 17,
-            12,
+            x - 7,
+            y - 34,
+            14,
             12
         );
 
-        // Face
+        // Hair
+
+        ctx.fillStyle = hair;
+
+        ctx.fillRect(
+            x - 8,
+            y - 36,
+            16,
+            6
+        );
+
+        ctx.fillRect(
+            x - 7,
+            y - 31,
+            3,
+            5
+        );
+
+        ctx.fillRect(
+            x + 4,
+            y - 31,
+            3,
+            5
+        );
+
+        // Face direction
 
         ctx.fillStyle = "#292929";
 
-        ctx.fillRect(
-            screenX - 3,
-            screenY - 12,
-            2,
-            2
-        );
-
-        ctx.fillRect(
-            screenX + 2,
-            screenY - 12,
-            2,
-            2
-        );
-
-        // Player name
-
-        if (name) {
-
-            ctx.font = "12px Arial";
-            ctx.textAlign = "center";
-
-            const label = String(name).slice(0, 20);
-
-            const textWidth =
-                ctx.measureText(label).width;
-
-            ctx.fillStyle = "rgba(0,0,0,0.65)";
+        if (direction === "left") {
 
             ctx.fillRect(
-                screenX - textWidth / 2 - 5,
-                screenY - 35,
-                textWidth + 10,
-                16
+                x - 4,
+                y - 28,
+                2,
+                2
             );
 
-            ctx.fillStyle = COLORS.text;
+        }
 
-            ctx.fillText(
-                label,
-                screenX,
-                screenY - 23
+        else if (direction === "right") {
+
+            ctx.fillRect(
+                x + 2,
+                y - 28,
+                2,
+                2
+            );
+
+        }
+
+        else if (direction === "up") {
+
+            ctx.fillStyle = hair;
+
+            ctx.fillRect(
+                x - 5,
+                y - 32,
+                10,
+                5
+            );
+
+        }
+
+        else {
+
+            ctx.fillRect(
+                x - 4,
+                y - 28,
+                2,
+                2
+            );
+
+            ctx.fillRect(
+                x + 2,
+                y - 28,
+                2,
+                2
             );
 
         }
@@ -487,18 +761,108 @@ window.ECHO_WORLD_RENDERER = (() => {
     }
 
     // ======================================
+    // DRAW PLAYER NAME
+    // ======================================
+
+    function drawPlayerName(
+        screenX,
+        screenY,
+        name,
+        isLocal
+    ) {
+
+        if (!name) return;
+
+        const label = String(name).slice(0, 20);
+
+        ctx.font = "12px Arial";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+
+        const width =
+            ctx.measureText(label).width;
+
+        const x = Math.floor(screenX);
+        const y = Math.floor(screenY - 47);
+
+        ctx.fillStyle = "rgba(0,0,0,0.72)";
+
+        ctx.fillRect(
+            x - width / 2 - 5,
+            y - 8,
+            width + 10,
+            16
+        );
+
+        ctx.fillStyle = isLocal
+            ? "#ffe39b"
+            : COLORS.text;
+
+        ctx.fillText(
+            label,
+            x,
+            y
+        );
+
+    }
+
+    // ======================================
+    // DRAW CHARACTER
+    // ======================================
+
+    function drawCharacter(
+        x,
+        y,
+        name,
+        isLocal,
+        direction,
+        moving,
+        cameraX,
+        cameraY,
+        time
+    ) {
+
+        const screenX = x - cameraX;
+        const screenY = y - cameraY;
+
+        drawPixelCharacter(
+            screenX,
+            screenY,
+            isLocal,
+            direction || "down",
+            moving,
+            time
+        );
+
+        drawPlayerName(
+            screenX,
+            screenY,
+            name,
+            isLocal
+        );
+
+    }
+
+    // ======================================
     // DRAW LOCAL PLAYER
     // ======================================
 
-    function drawLocalPlayer(cameraX, cameraY) {
+    function drawLocalPlayer(
+        cameraX,
+        cameraY,
+        time
+    ) {
 
         drawCharacter(
             player.x,
             player.y,
             player.name,
             true,
+            player.direction,
+            player.moving,
             cameraX,
-            cameraY
+            cameraY,
+            time
         );
 
     }
@@ -507,7 +871,11 @@ window.ECHO_WORLD_RENDERER = (() => {
     // DRAW REMOTE PLAYERS
     // ======================================
 
-    function drawRemotePlayers(cameraX, cameraY) {
+    function drawRemotePlayers(
+        cameraX,
+        cameraY,
+        time
+    ) {
 
         const remotePlayers = getRemotePlayers();
 
@@ -517,12 +885,20 @@ window.ECHO_WORLD_RENDERER = (() => {
                 continue;
             }
 
-            // ไม่แสดงผู้เล่นที่อยู่คนละแผนที่
+            const game = getGame();
+
+            const localMap =
+                game?.player?.map ||
+                game?.player?.map_id;
+
+            const remoteMap =
+                remote.map ||
+                remote.map_id;
 
             if (
-                remote.map &&
-                getGame()?.player?.map &&
-                remote.map !== getGame().player.map
+                remoteMap &&
+                localMap &&
+                remoteMap !== localMap
             ) {
                 continue;
             }
@@ -532,8 +908,11 @@ window.ECHO_WORLD_RENDERER = (() => {
                 Number(remote.y),
                 remote.name || "Adventurer",
                 false,
+                remote.direction || "down",
+                remote.moving === true,
                 cameraX,
-                cameraY
+                cameraY,
+                time
             );
 
         }
@@ -544,11 +923,13 @@ window.ECHO_WORLD_RENDERER = (() => {
     // RENDER FRAME
     // ======================================
 
-    function render() {
+    function render(timestamp = 0) {
 
         if (!ctx || !canvas || !running) {
             return;
         }
+
+        lastFrameTime = timestamp;
 
         ctx.clearRect(
             0,
@@ -557,18 +938,20 @@ window.ECHO_WORLD_RENDERER = (() => {
             canvas.height
         );
 
-        const camera = drawMap();
+        const camera = drawMap(timestamp);
 
         if (camera) {
 
             drawRemotePlayers(
                 camera.cameraX,
-                camera.cameraY
+                camera.cameraY,
+                timestamp
             );
 
             drawLocalPlayer(
                 camera.cameraX,
-                camera.cameraY
+                camera.cameraY,
+                timestamp
             );
 
         }
@@ -589,19 +972,25 @@ window.ECHO_WORLD_RENDERER = (() => {
         );
 
         if (!canvas) {
+
             console.error(
                 "[WORLD RENDERER] Canvas not found"
             );
+
             return false;
+
         }
 
         ctx = canvas.getContext("2d");
 
         if (!ctx) {
+
             console.error(
                 "[WORLD RENDERER] Canvas context unavailable"
             );
+
             return false;
+
         }
 
         ctx.imageSmoothingEnabled = false;
@@ -694,6 +1083,10 @@ window.ECHO_WORLD_RENDERER = (() => {
             player.direction = data.direction;
         }
 
+        if (typeof data.moving === "boolean") {
+            player.moving = data.moving;
+        }
+
     }
 
     // ======================================
@@ -704,7 +1097,7 @@ window.ECHO_WORLD_RENDERER = (() => {
 
         const game = getGame();
 
-        if (!game || !game.world || !data) {
+        if (!game || !game.world || !data || !data.id) {
             return;
         }
 
