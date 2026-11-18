@@ -3,11 +3,9 @@
 
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <meta name="viewport"
-          content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-
-    <meta name="theme-color" content="#101522">
+    <meta name="theme-color" content="#10131e">
 
     <title>ECHO ISLES RPG</title>
 
@@ -15,249 +13,207 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 
-    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap"
-          rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
-    <!-- Main CSS -->
+    <!-- Game CSS -->
     <link rel="stylesheet" href="css/style.css">
-
-    <!-- Game UI CSS -->
     <link rel="stylesheet" href="css/ui.css">
 
 </head>
 
 <body>
 
-    <div class="background"></div>
-    <div class="stars"></div>
+    <!-- Background -->
+    <div class="background">
+        <div class="stars"></div>
+    </div>
 
+    <!-- Main Menu -->
     <main class="main-menu">
 
-        <div class="menu-container">
+        <!-- Logo -->
+        <div class="logo-container">
 
-            <div class="game-logo">
+            <h1 class="logo">
+                ECHO <span>ISLES</span>
+            </h1>
 
-                <h1>ECHO ISLES</h1>
-
-                <p>THE WORLD OF ADVENTURE</p>
-
-                <div class="divider"></div>
-
-            </div>
-
-            <p class="menu-subtitle">
-                โลกแห่งการผจญภัยกำลังรอคุณอยู่
+            <p class="subtitle">
+                THE WORLD OF ADVENTURE
             </p>
 
-            <div class="menu-buttons">
+            <div class="divider"></div>
 
-                <button class="menu-btn primary" id="startButton">
-                    เริ่มการผจญภัย
-                </button>
-
-                <button class="menu-btn" id="characterButton">
-                    สร้างตัวละคร
-                </button>
-
-                <button class="menu-btn" id="settingsButton">
-                    ตั้งค่า
-                </button>
-
-            </div>
-
-            <div class="server-status">
-
-                <span class="status-dot" id="statusDot"></span>
-
-                <span id="serverStatus">
-                    กำลังเชื่อมต่อเซิร์ฟเวอร์...
-                </span>
-
-            </div>
-
-            <div class="footer">
-                ECHO ISLES RPG © 2026
-                <br>
-                ONLINE MMORPG · VERSION 0.1.0
-            </div>
+            <p class="game-description">
+                Explore the world. Create your destiny.
+            </p>
 
         </div>
 
+        <!-- Menu Buttons -->
+        <div class="menu-buttons">
+
+            <button
+                class="menu-button primary"
+                id="start-game"
+                type="button"
+            >
+                START GAME
+            </button>
+
+            <button
+                class="menu-button"
+                id="create-character"
+                type="button"
+            >
+                CREATE CHARACTER
+            </button>
+
+            <button
+                class="menu-button"
+                id="settings"
+                type="button"
+            >
+                SETTINGS
+            </button>
+
+        </div>
+
+        <!-- Server Status -->
+        <div class="server-status">
+
+            <span class="status-indicator" id="status-indicator"></span>
+
+            <span id="server-status">
+                CONNECTING TO SERVER...
+            </span>
+
+        </div>
+
+        <!-- Footer -->
+        <footer class="footer">
+
+            <p>
+                ECHO ISLES RPG
+            </p>
+
+            <p>
+                VERSION 0.1.0
+            </p>
+
+        </footer>
+
     </main>
 
-    <div class="notification" id="notification"></div>
+    <!-- Notification -->
+    <div id="notification" class="notification">
+        Welcome to ECHO ISLES!
+    </div>
 
     <!-- Socket.IO -->
     <script src="/socket.io/socket.io.js"></script>
 
+    <!-- Game Configuration -->
+    <script src="js/config.js"></script>
+
+    <!-- Main Game Controller -->
+    <script src="js/main.js"></script>
+
+    <!-- Main Menu Controller -->
     <script>
 
-        const statusDot =
-            document.getElementById("statusDot");
+        document.addEventListener("DOMContentLoaded", () => {
 
-        const serverStatus =
-            document.getElementById("serverStatus");
+            const startButton = document.getElementById("start-game");
+            const characterButton = document.getElementById("create-character");
+            const settingsButton = document.getElementById("settings");
 
-        const notification =
-            document.getElementById("notification");
+            const statusText = document.getElementById("server-status");
+            const statusIndicator = document.getElementById("status-indicator");
+            const notification = document.getElementById("notification");
 
-        let socket = null;
-        let playerData = null;
+            // Notification
+            function showNotification(message) {
 
-        // Notification
+                notification.textContent = message;
 
-        function showNotification(message) {
+                notification.classList.add("show");
 
-            notification.textContent = message;
+                setTimeout(() => {
+                    notification.classList.remove("show");
+                }, 3000);
 
-            notification.classList.add("show");
+            }
 
-            setTimeout(() => {
+            // Connect to server
+            if (window.ECHO_GAME) {
 
-                notification.classList.remove("show");
+                window.ECHO_GAME.network.connect();
 
-            }, 2500);
+                const socket = window.ECHO_GAME.network.socket;
 
-        }
+                socket.on("connect", () => {
 
-        // Server Status
+                    statusText.textContent = "SERVER ONLINE";
 
-        function updateServerStatus(status, text) {
+                    statusIndicator.classList.add("online");
 
-            statusDot.className = "status-dot " + status;
+                });
 
-            serverStatus.textContent = text;
+                socket.on("disconnect", () => {
 
-        }
+                    statusText.textContent = "SERVER OFFLINE";
 
-        // Socket.IO Connection
+                    statusIndicator.classList.remove("online");
 
-        if (typeof io !== "undefined") {
+                });
 
-            socket = io({
+                socket.on("connect_error", () => {
 
-                reconnection: true,
+                    statusText.textContent = "CONNECTION FAILED";
 
-                reconnectionAttempts: Infinity,
+                    statusIndicator.classList.remove("online");
 
-                reconnectionDelay: 2000
+                });
 
-            });
+            } else {
 
-            socket.on("connect", () => {
+                statusText.textContent = "GAME SYSTEM ERROR";
 
-                updateServerStatus(
-                    "online",
-                    "เซิร์ฟเวอร์ออนไลน์"
-                );
+            }
 
-                showNotification(
-                    "เชื่อมต่อเซิร์ฟเวอร์สำเร็จ!"
-                );
+            // Start Game
+            startButton.addEventListener("click", () => {
 
-                console.log("Connected:", socket.id);
+                if (!window.ECHO_GAME?.state.connected) {
 
-            });
-
-            socket.on("disconnect", () => {
-
-                updateServerStatus(
-                    "offline",
-                    "ขาดการเชื่อมต่อ"
-                );
-
-            });
-
-            socket.on("connect_error", (error) => {
-
-                updateServerStatus(
-                    "offline",
-                    "เชื่อมต่อเซิร์ฟเวอร์ไม่ได้"
-                );
-
-                console.error(error);
-
-            });
-
-            socket.on("world:init", (data) => {
-
-                playerData = data.self;
-
-                console.log("Player Data:", playerData);
-
-                console.log("World Players:", data.players);
-
-            });
-
-            socket.on("player:joined", (player) => {
-
-                console.log("Player joined:", player);
-
-            });
-
-            socket.on("player:left", (playerId) => {
-
-                console.log("Player left:", playerId);
-
-            });
-
-        } else {
-
-            updateServerStatus(
-                "offline",
-                "ไม่พบระบบ Socket.IO"
-            );
-
-        }
-
-        // Start Game
-
-        document
-            .getElementById("startButton")
-            .addEventListener("click", () => {
-
-                if (!socket || !socket.connected) {
-
-                    showNotification(
-                        "กรุณารอการเชื่อมต่อเซิร์ฟเวอร์"
-                    );
+                    showNotification("Unable to connect to game server.");
 
                     return;
 
                 }
 
-                showNotification(
-                    "ระบบสร้างตัวละครกำลังพัฒนา"
-                );
+                showNotification("Game world is being prepared.");
 
             });
 
-        // Character Creator
+            // Character Creator
+            characterButton.addEventListener("click", () => {
 
-        document
-            .getElementById("characterButton")
-            .addEventListener("click", () => {
-
-                showNotification(
-                    "Character Creator กำลังพัฒนา"
-                );
+                showNotification("Character Creator is coming soon!");
 
             });
 
-        // Settings
+            // Settings
+            settingsButton.addEventListener("click", () => {
 
-        document
-            .getElementById("settingsButton")
-            .addEventListener("click", () => {
-
-                showNotification(
-                    "Settings กำลังพัฒนา"
-                );
+                showNotification("Settings are coming soon!");
 
             });
+
+        });
 
     </script>
 
 </body>
-
 </html>
