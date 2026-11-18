@@ -1,7 +1,7 @@
 /* =========================================
    ECHO ISLES RPG
    MAIN GAME CONTROLLER
-   Version: 0.6.0
+   Version: 0.7.0
 ========================================= */
 
 "use strict";
@@ -55,6 +55,8 @@
             y: 300,
 
             direction: "down",
+            moving: false,
+
             map: "starting_village"
         },
 
@@ -176,7 +178,8 @@
 
                         GAME.player = {
                             ...GAME.player,
-                            ...data.self
+                            ...data.self,
+                            moving: false
                         };
 
                         GAME.world.currentMap =
@@ -200,7 +203,10 @@
 
                             GAME.world.players.set(
                                 remote.id,
-                                remote
+                                {
+                                    ...remote,
+                                    moving: false
+                                }
                             );
 
                         });
@@ -212,6 +218,8 @@
                     GAME.syncRenderer();
 
                     GAME.movement.start();
+
+                    GAME.showJoystick();
 
                     console.log(
                         "[WORLD] World initialized"
@@ -236,7 +244,10 @@
 
                     GAME.world.players.set(
                         remote.id,
-                        remote
+                        {
+                            ...remote,
+                            moving: false
+                        }
                     );
 
                     GAME.syncRenderer();
@@ -280,7 +291,8 @@
 
                     const updated = {
                         ...previous,
-                        ...data
+                        ...data,
+                        moving: true
                     };
 
                     GAME.world.players.set(
@@ -289,6 +301,28 @@
                     );
 
                     GAME.syncRenderer();
+
+                    // Remote movement timeout
+
+                    clearTimeout(updated.movementTimer);
+
+                    updated.movementTimer = setTimeout(() => {
+
+                        const current =
+                            GAME.world.players.get(data.id);
+
+                        if (!current) return;
+
+                        current.moving = false;
+
+                        GAME.world.players.set(
+                            data.id,
+                            current
+                        );
+
+                        GAME.syncRenderer();
+
+                    }, 250);
 
                 });
 
@@ -302,6 +336,13 @@
                             : data?.id;
 
                     if (!playerId) return;
+
+                    const remote =
+                        GAME.world.players.get(playerId);
+
+                    if (remote?.movementTimer) {
+                        clearTimeout(remote.movementTimer);
+                    }
 
                     GAME.world.players.delete(playerId);
 
@@ -436,6 +477,10 @@
 
                 this.joystickActive = false;
 
+                GAME.player.moving = false;
+
+                GAME.syncRenderer();
+
             },
 
             setJoystick(x, y) {
@@ -526,10 +571,13 @@
 
                 }
 
-                if (
+                const isMoving =
                     Math.abs(x) > 0.01 ||
-                    Math.abs(y) > 0.01
-                ) {
+                    Math.abs(y) > 0.01;
+
+                GAME.player.moving = isMoving;
+
+                if (isMoving) {
 
                     GAME.player.x +=
                         x * this.speed * deltaTime;
@@ -574,6 +622,14 @@
 
                     }
 
+                } else {
+
+                    // Update renderer only when movement stops
+
+                    if (GAME.player.moving !== false) {
+                        GAME.syncRenderer();
+                    }
+
                 }
 
                 this.animationFrame =
@@ -594,7 +650,8 @@
 
                     x: GAME.player.x,
                     y: GAME.player.y,
-                    direction: GAME.player.direction
+                    direction: GAME.player.direction,
+                    moving: GAME.player.moving
 
                 });
 
@@ -613,7 +670,7 @@
 
             if (!renderer) return;
 
-            // Update local player
+            // Local player
 
             renderer.updatePlayer({
 
@@ -624,11 +681,13 @@
 
                 name: GAME.player.name,
 
-                direction: GAME.player.direction
+                direction: GAME.player.direction,
+
+                moving: GAME.player.moving
 
             });
 
-            // Update remote players
+            // Remote players
 
             GAME.world.players.forEach(remote => {
 
@@ -688,7 +747,8 @@
 
                             this.player = {
                                 ...this.player,
-                                ...result.player
+                                ...result.player,
+                                moving: false
                             };
 
                         }
@@ -710,7 +770,10 @@
 
                                     this.world.players.set(
                                         remote.id,
-                                        remote
+                                        {
+                                            ...remote,
+                                            moving: false
+                                        }
                                     );
 
                                 }
@@ -724,6 +787,8 @@
                         this.syncRenderer();
 
                         this.movement.start();
+
+                        this.showJoystick();
 
                         resolve(result);
 
