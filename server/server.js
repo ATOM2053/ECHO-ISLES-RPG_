@@ -1,330 +1,307 @@
-/* =========================================
-   ECHO ISLES RPG
-   MAIN GAME SERVER
-   Version: 0.2.0
-========================================= */
-
-"use strict";
-
 require("dotenv").config();
 
 const express = require("express");
 const http = require("http");
 const cors = require("cors");
+const { Server } = require("socket.io");
 const path = require("path");
 
-const { Server } = require("socket.io");
-
 const {
-    testConnection
+    testConnection,
+    closeDatabase
 } = require("./database");
 
 const accountRoutes = require("./routes/accountRoutes");
-
-/* =========================================
-   EXPRESS SERVER
-========================================= */
+const characterRoutes = require("./routes/characterRoutes");
 
 const app = express();
-
 const server = http.createServer(app);
 
-const PORT = process.env.PORT || 3000;
+// ==========================================
+// SERVER CONFIGURATION
+// ==========================================
 
-app.disable("x-powered-by");
+const PORT = process.env.PORT || 3000;
 
 app.use(cors({
     origin: process.env.CLIENT_ORIGIN || "*"
 }));
 
-app.use(express.json({
-    limit: "20kb"
-}));
+app.use(express.json({ limit: "1mb" }));
+app.use(express.urlencoded({ extended: true }));
 
-app.use(express.urlencoded({
-    extended: false,
-    limit: "20kb"
-}));
-
-/* =========================================
-   STATIC CLIENT
-========================================= */
-
-app.use(
-    express.static(
-        path.join(__dirname, "../client")
-    )
-);
-
-/* =========================================
-   API ROUTES
-========================================= */
+// ==========================================
+// API ROUTES
+// ==========================================
 
 app.use("/api/account", accountRoutes);
+app.use("/api/characters", characterRoutes);
 
-/* =========================================
-   SERVER STATUS
-========================================= */
+// ==========================================
+// SERVE CLIENT
+// ==========================================
+
+app.use(express.static(
+    path.join(__dirname, "../client")
+));
+
+// ==========================================
+// SERVER STATUS
+// ==========================================
 
 app.get("/api/status", (req, res) => {
-
     res.json({
-
+        success: true,
         game: "ECHO ISLES RPG",
-
-        status: "online",
-
-        players: players.size,
-
         version: "0.2.0",
-
+        status: "online",
         database: process.env.DATABASE_URL
             ? "configured"
-            : "not_configured"
-
+            : "not_configured",
+        timestamp: new Date().toISOString()
     });
-
 });
 
-/* =========================================
-   SOCKET.IO
-========================================= */
+// ==========================================
+// SOCKET.IO
+// ==========================================
 
 const io = new Server(server, {
-
     cors: {
         origin: process.env.CLIENT_ORIGIN || "*",
         methods: ["GET", "POST"]
-    },
-
-    pingInterval: 25000,
-
-    pingTimeout: 20000
-
+    }
 });
 
-/* =========================================
-   PLAYER STORAGE
-========================================= */
+// ==========================================
+// ONLINE PLAYERS
+// ==========================================
 
 const players = new Map();
 
-/* =========================================
-   SOCKET CONNECTION
-========================================= */
+// ==========================================
+// PLAYER CONNECTION
+// ==========================================
 
 io.on("connection", (socket) => {
 
     console.log(
-        "[GAME] Player connected:",
-        socket.id
+        `[ONLINE] Player connected: ${socket.id}`
     );
 
+    // --------------------------------------
+    // INITIALIZE PLAYER
+    // --------------------------------------
+
     const player = {
-
         id: socket.id,
-
         name: "Adventurer",
-
         x: 400,
-
         y: 300,
-
-        direction: "down",
-
-        level: 1,
-
-        hp: 100,
-
-        mp: 100,
-
         map: "starting_village"
-
     };
 
     players.set(socket.id, player);
 
-    /* INITIAL WORLD DATA */
-
     socket.emit("world:init", {
-
-        self: player,
-
-        players: Array.from(
-            players.values()
-        )
-
+        player,
+        players: Array.from(players.values())
     });
 
-    socket.broadcast.emit(
-        "player:joined",
-        player
-    );
+    socket.broadcast.emit("player:joined", player);
 
-    /* =================================
-       PLAYER MOVEMENT
-    ================================= */
+    // --------------------------------------
+    // PLAYER MOVEMENT
+    // --------------------------------------
 
     socket.on("player:move", (data) => {
 
-        const currentPlayer = players.get(
-            socket.id
-        );
+        if (!data || typeof data !== "object") {
+            return;
+        }
 
-        if (!currentPlayer || !data) return;
+        const currentPlayer = players.get(socket.id);
+
+        if (!currentPlayer) {
+            return;
+        }
 
         const x = Number(data.x);
         const y = Number(data.y);
 
-        if (
-            !Number.isFinite(x) ||
-            !Number.isFinite(y)
-        ) {
+        if (!Number.isFinite(x) || !Number.isFinite(y)) {
             return;
         }
 
-        if (
-            Math.abs(x - currentPlayer.x) > 100 ||
-            Math.abs(y - currentPlayer.y) > 100
-        ) {
+        // จำกัดระยะการเคลื่อนที่ต่อหนึ่งคำสั่ง
+        const dx = x - currentPlayer.x;
+        const dy = y - currentPlayer.y;
+
+        const distance = Math.sqrt(
+            dx * dx + dy * dy
+        );
+
+        if (distance > 100) {
             return;
         }
 
         currentPlayer.x = x;
         currentPlayer.y = y;
 
-        if (
-            ["up", "down", "left", "right"]
-                .includes(data.direction)
-        ) {
-            currentPlayer.direction = data.direction;
+        io.emit("player:moved", {
+            id: socket.id,
+            x: currentPlayer.x,
+            y: currentPlayer.y
+        });
+    });
+
+    // --------------------------------------
+    // PLAYER CHAT
+    // --------------------------------------
+
+    socket.on("player:chat", (data) => {
+
+        if (!data || typeof data.message !== "string") {
+            return;
         }
 
-        io.emit(
-            "player:moved",
-            currentPlayer
-        );
+        const message = data.message.trim();
 
-    });
+        if (!message || message.length > 200) {
+            return;
+        }
 
-    /* =================================
-       LEGACY CHAT
-    ================================= */
+        const currentPlayer = players.get(socket.id);
 
-    socket.on("player:chat", (message) => {
-
-        if (typeof message !== "string") return;
-
-        const text = message.trim().slice(0, 200);
-
-        if (!text) return;
+        if (!currentPlayer) {
+            return;
+        }
 
         io.emit("chat:message", {
-
-            playerId: socket.id,
-
-            name: players.get(socket.id)?.name ||
-                "Adventurer",
-
-            message: text,
-
-            time: Date.now()
-
+            id: socket.id,
+            name: currentPlayer.name,
+            message,
+            timestamp: Date.now()
         });
-
     });
 
-    /* =================================
-       DISCONNECT
-    ================================= */
+    // --------------------------------------
+    // PLAYER DISCONNECT
+    // --------------------------------------
 
     socket.on("disconnect", () => {
 
+        console.log(
+            `[OFFLINE] Player disconnected: ${socket.id}`
+        );
+
         players.delete(socket.id);
 
-        io.emit(
-            "player:left",
-            socket.id
-        );
-
-        console.log(
-            "[GAME] Player disconnected:",
-            socket.id
-        );
-
+        io.emit("player:left", {
+            id: socket.id
+        });
     });
 
 });
 
-/* =========================================
-   START SERVER
-========================================= */
+// ==========================================
+// 404 API HANDLER
+// ==========================================
 
-server.listen(PORT, "0.0.0.0", async () => {
-
-    console.log("--------------------------------");
-
-    console.log(" ECHO ISLES RPG SERVER");
-
-    console.log("--------------------------------");
-
-    console.log("Port:", PORT);
-
-    console.log("Environment:", process.env.NODE_ENV || "development");
-
-    console.log("Account API: /api/account");
-
-    console.log("Game Socket: enabled");
-
-    console.log("--------------------------------");
-
-    if (process.env.DATABASE_URL) {
-
-        await testConnection();
-
-    } else {
-
-        console.warn(
-            "[DATABASE] Waiting for PostgreSQL configuration."
-        );
-
-    }
-
+app.use("/api", (req, res) => {
+    res.status(404).json({
+        success: false,
+        code: "API_NOT_FOUND",
+        message: "ไม่พบ API ที่เรียกใช้งาน"
+    });
 });
 
-/* =========================================
-   GRACEFUL SHUTDOWN
-========================================= */
+// ==========================================
+// ERROR HANDLER
+// ==========================================
 
-async function shutdown() {
+app.use((error, req, res, next) => {
 
-    console.log("[SERVER] Shutting down...");
+    console.error("[SERVER ERROR]", error);
+
+    if (res.headersSent) {
+        return next(error);
+    }
+
+    res.status(error.status || 500).json({
+        success: false,
+        message: "เกิดข้อผิดพลาดภายในเซิร์ฟเวอร์"
+    });
+});
+
+// ==========================================
+// START SERVER
+// ==========================================
+
+server.listen(PORT, async () => {
+
+    console.log("--------------------------------");
+    console.log("ECHO ISLES RPG SERVER");
+    console.log("--------------------------------");
+
+    console.log(`[SERVER] Running on port ${PORT}`);
+
+    console.log(
+        `[DATABASE] ${
+            process.env.DATABASE_URL
+                ? "Configured"
+                : "Not configured"
+        }`
+    );
+
+    if (process.env.DATABASE_URL) {
+        await testConnection();
+    }
+
+    console.log("[SERVER] Ready");
+});
+
+// ==========================================
+// GRACEFUL SHUTDOWN
+// ==========================================
+
+let shuttingDown = false;
+
+async function shutdown(signal) {
+
+    if (shuttingDown) return;
+
+    shuttingDown = true;
+
+    console.log(`[SERVER] ${signal} received`);
 
     io.close();
 
     server.close(async () => {
 
         try {
-
-            const { closeDatabase } = require("./database");
-
             await closeDatabase();
+
+            console.log("[SERVER] Shutdown complete");
+
+            process.exit(0);
 
         } catch (error) {
 
             console.error(
-                "[SERVER] Database shutdown error:",
+                "[SERVER] Shutdown error:",
                 error.message
             );
 
+            process.exit(1);
         }
-
-        process.exit(0);
-
     });
 
+    setTimeout(() => {
+        console.error("[SERVER] Forced shutdown");
+        process.exit(1);
+    }, 10000).unref();
 }
 
-process.on("SIGTERM", shutdown);
-
-process.on("SIGINT", shutdown);
+process.on("SIGTERM", () => shutdown("SIGTERM"));
+process.on("SIGINT", () => shutdown("SIGINT"));
