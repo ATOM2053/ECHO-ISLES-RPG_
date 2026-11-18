@@ -20,20 +20,21 @@
 
     <!-- Main CSS -->
     <link rel="stylesheet" href="css/style.css">
+
+    <!-- Game UI CSS -->
+    <link rel="stylesheet" href="css/ui.css">
+
 </head>
 
 <body>
 
-    <!-- Background -->
     <div class="background"></div>
     <div class="stars"></div>
 
-    <!-- Main Menu -->
     <main class="main-menu">
 
         <div class="menu-container">
 
-            <!-- Game Logo -->
             <div class="game-logo">
 
                 <h1>ECHO ISLES</h1>
@@ -48,7 +49,6 @@
                 โลกแห่งการผจญภัยกำลังรอคุณอยู่
             </p>
 
-            <!-- Menu Buttons -->
             <div class="menu-buttons">
 
                 <button class="menu-btn primary" id="startButton">
@@ -65,7 +65,6 @@
 
             </div>
 
-            <!-- Server Status -->
             <div class="server-status">
 
                 <span class="status-dot" id="statusDot"></span>
@@ -76,7 +75,6 @@
 
             </div>
 
-            <!-- Footer -->
             <div class="footer">
                 ECHO ISLES RPG © 2026
                 <br>
@@ -87,18 +85,12 @@
 
     </main>
 
-    <!-- Notification -->
     <div class="notification" id="notification"></div>
 
     <!-- Socket.IO -->
     <script src="/socket.io/socket.io.js"></script>
 
     <script>
-
-        // =====================================
-        // ECHO ISLES RPG
-        // CLIENT MAIN SCRIPT
-        // =====================================
 
         const statusDot =
             document.getElementById("statusDot");
@@ -112,10 +104,7 @@
         let socket = null;
         let playerData = null;
 
-
-        // =====================================
-        // NOTIFICATION SYSTEM
-        // =====================================
+        // Notification
 
         function showNotification(message) {
 
@@ -131,10 +120,7 @@
 
         }
 
-
-        // =====================================
-        // SERVER STATUS
-        // =====================================
+        // Server Status
 
         function updateServerStatus(status, text) {
 
@@ -144,10 +130,7 @@
 
         }
 
-
-        // =====================================
-        // SOCKET.IO CONNECTION
-        // =====================================
+        // Socket.IO Connection
 
         if (typeof io !== "undefined") {
 
@@ -161,7 +144,6 @@
 
             });
 
-
             socket.on("connect", () => {
 
                 updateServerStatus(
@@ -173,13 +155,9 @@
                     "เชื่อมต่อเซิร์ฟเวอร์สำเร็จ!"
                 );
 
-                console.log(
-                    "Connected:",
-                    socket.id
-                );
+                console.log("Connected:", socket.id);
 
             });
-
 
             socket.on("disconnect", () => {
 
@@ -189,7 +167,6 @@
                 );
 
             });
-
 
             socket.on("connect_error", (error) => {
 
@@ -202,43 +179,25 @@
 
             });
 
-
-            // World Initialization
             socket.on("world:init", (data) => {
 
                 playerData = data.self;
 
-                console.log(
-                    "Player Data:",
-                    playerData
-                );
+                console.log("Player Data:", playerData);
 
-                console.log(
-                    "World Players:",
-                    data.players
-                );
+                console.log("World Players:", data.players);
 
             });
 
-
-            // Player Joined
             socket.on("player:joined", (player) => {
 
-                console.log(
-                    "Player joined:",
-                    player
-                );
+                console.log("Player joined:", player);
 
             });
 
-
-            // Player Left
             socket.on("player:left", (playerId) => {
 
-                console.log(
-                    "Player left:",
-                    playerId
-                );
+                console.log("Player left:", playerId);
 
             });
 
@@ -251,10 +210,7 @@
 
         }
 
-
-        // =====================================
-        // MAIN MENU
-        // =====================================
+        // Start Game
 
         document
             .getElementById("startButton")
@@ -276,8 +232,8 @@
 
             });
 
-
         // Character Creator
+
         document
             .getElementById("characterButton")
             .addEventListener("click", () => {
@@ -288,8 +244,8 @@
 
             });
 
-
         // Settings
+
         document
             .getElementById("settingsButton")
             .addEventListener("click", () => {
@@ -303,4 +259,5 @@
     </script>
 
 </body>
+
 </html>
