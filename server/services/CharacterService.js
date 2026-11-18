@@ -1,7 +1,7 @@
 /* =========================================
    ECHO ISLES RPG
    CHARACTER SERVICE
-   Version: 1.1.0
+   Version: 1.2.0
 ========================================= */
 
 "use strict";
@@ -13,7 +13,8 @@ const CharacterService = {
     settings: {
         minNameLength: 3,
         maxNameLength: 20,
-        maxCharacters: 3
+        maxCharacters: 3,
+        defaultJob: "Adventurer"
     },
 
     races: [
@@ -151,6 +152,17 @@ const CharacterService = {
             throw new Error("INVALID_CHARACTER_GENDER");
         }
 
+        // Default job
+        const job = data.job || this.settings.defaultJob;
+
+        // Validate job
+        if (
+            typeof job !== "string" ||
+            !this.jobs.includes(job)
+        ) {
+            throw new Error("INVALID_CHARACTER_JOB");
+        }
+
         // Check character limit
         const existing = await query(
             `
@@ -194,7 +206,7 @@ const CharacterService = {
                     $4,
                     1,
                     0,
-                    'Adventurer',
+                    $5,
                     100,
                     100,
                     100,
@@ -221,7 +233,8 @@ const CharacterService = {
                     accountId,
                     data.name.trim(),
                     data.race,
-                    data.gender
+                    data.gender,
+                    job
                 ]
             );
 
