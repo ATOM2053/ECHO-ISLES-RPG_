@@ -1,7 +1,7 @@
 /* =========================================
    ECHO ISLES RPG
    MAIN GAME CONTROLLER
-   Version: 0.5.0
+   Version: 0.6.0
 ========================================= */
 
 "use strict";
@@ -15,9 +15,9 @@
 
     const GAME = {
 
-        /* =====================================
-           GAME STATE
-        ===================================== */
+        // ==================================
+        // GAME STATE
+        // ==================================
 
         state: {
             initialized: false,
@@ -26,9 +26,9 @@
             loading: true
         },
 
-        /* =====================================
-           PLAYER
-        ===================================== */
+        // ==================================
+        // PLAYER
+        // ==================================
 
         player: {
             id: null,
@@ -58,9 +58,9 @@
             map: "starting_village"
         },
 
-        /* =====================================
-           WORLD
-        ===================================== */
+        // ==================================
+        // WORLD
+        // ==================================
 
         world: {
             currentMap: "starting_village",
@@ -70,40 +70,9 @@
             npcs: new Map()
         },
 
-        /* =====================================
-           MOVEMENT SETTINGS
-        ===================================== */
-
-        movement: {
-
-            speed: 180,
-
-            keyboard: {
-                x: 0,
-                y: 0
-            },
-
-            joystick: {
-                x: 0,
-                y: 0
-            },
-
-            lastDirection: "down",
-
-            lastUpdate: 0,
-            lastNetworkUpdate: 0,
-
-            animationFrame: null,
-
-            joystickActive: false,
-
-            keys: new Set()
-
-        },
-
-        /* =====================================
-           NETWORK
-        ===================================== */
+        // ==================================
+        // NETWORK
+        // ==================================
 
         network: {
 
@@ -111,16 +80,15 @@
 
             connect() {
 
-                const token = window.ECHO_AUTH?.getToken();
+                const token =
+                    window.ECHO_AUTH?.getToken();
 
                 if (!token) {
-                    console.warn("Authentication required.");
-                    return null;
+                    throw new Error("AUTHENTICATION_REQUIRED");
                 }
 
                 if (typeof window.io !== "function") {
-                    console.error("Socket.IO is not loaded.");
-                    return null;
+                    throw new Error("SOCKET_IO_NOT_LOADED");
                 }
 
                 if (this.socket?.connected) {
@@ -134,7 +102,8 @@
 
                 const socket = window.io({
 
-                    path: window.GAME_CONFIG.NETWORK.SOCKET_PATH,
+                    path:
+                        window.GAME_CONFIG.NETWORK.SOCKET_PATH,
 
                     auth: {
                         token
@@ -153,17 +122,20 @@
 
                 this.socket = socket;
 
-                /* CONNECTION */
+                // CONNECTION
 
                 socket.on("connect", () => {
 
                     GAME.state.connected = true;
 
-                    console.log("Connected:", socket.id);
+                    console.log(
+                        "[NETWORK] Connected:",
+                        socket.id
+                    );
 
                 });
 
-                /* DISCONNECTION */
+                // DISCONNECTION
 
                 socket.on("disconnect", reason => {
 
@@ -172,24 +144,29 @@
 
                     GAME.movement.stop();
 
-                    console.log("Disconnected:", reason);
+                    GAME.hideJoystick();
+
+                    console.log(
+                        "[NETWORK] Disconnected:",
+                        reason
+                    );
 
                 });
 
-                /* CONNECTION ERROR */
+                // CONNECTION ERROR
 
                 socket.on("connect_error", error => {
 
                     GAME.state.connected = false;
 
                     console.error(
-                        "Connection error:",
+                        "[NETWORK] Connection error:",
                         error.message
                     );
 
                 });
 
-                /* WORLD INITIALIZATION */
+                // WORLD INITIALIZATION
 
                 socket.on("world:init", data => {
 
@@ -212,16 +189,19 @@
 
                     if (Array.isArray(data.players)) {
 
-                        data.players.forEach(player => {
+                        data.players.forEach(remote => {
 
-                            if (player.id !== GAME.player.id) {
-
-                                GAME.world.players.set(
-                                    player.id,
-                                    player
-                                );
-
+                            if (
+                                !remote?.id ||
+                                remote.id === GAME.player.id
+                            ) {
+                                return;
                             }
+
+                            GAME.world.players.set(
+                                remote.id,
+                                remote
+                            );
 
                         });
 
@@ -229,52 +209,90 @@
 
                     GAME.state.playing = true;
 
+                    GAME.syncRenderer();
+
                     GAME.movement.start();
 
-                    console.log("Entered game world!");
+                    console.log(
+                        "[WORLD] World initialized"
+                    );
 
-                });
-
-                /* PLAYER JOINED */
-
-                socket.on("player:joined", player => {
-
-                    if (!player?.id) return;
-
-                    if (player.id === GAME.player.id) return;
-
-                    GAME.world.players.set(
-                        player.id,
-                        player
+                    console.log(
+                        "[WORLD] Remote players:",
+                        GAME.world.players.size
                     );
 
                 });
 
-                /* PLAYER MOVED */
+                // PLAYER JOINED
 
-                socket.on("player:moved", player => {
+                socket.on("player:joined", remote => {
 
-                    if (!player?.id) return;
+                    if (!remote?.id) return;
 
-                    if (player.id === GAME.player.id) {
+                    if (remote.id === GAME.player.id) {
+                        return;
+                    }
+
+                    GAME.world.players.set(
+                        remote.id,
+                        remote
+                    );
+
+                    GAME.syncRenderer();
+
+                    console.log(
+                        "[WORLD] Player joined:",
+                        remote.name
+                    );
+
+                });
+
+                // PLAYER MOVED
+
+                socket.on("player:moved", data => {
+
+                    if (!data?.id) return;
+
+                    // Local player
+
+                    if (data.id === GAME.player.id) {
 
                         GAME.player = {
                             ...GAME.player,
-                            ...player
+                            ...data
                         };
+
+                        GAME.syncRenderer();
 
                         return;
 
                     }
 
+                    // Remote player
+
+                    const previous =
+                        GAME.world.players.get(data.id);
+
+                    if (!previous) {
+                        return;
+                    }
+
+                    const updated = {
+                        ...previous,
+                        ...data
+                    };
+
                     GAME.world.players.set(
-                        player.id,
-                        player
+                        data.id,
+                        updated
                     );
+
+                    GAME.syncRenderer();
 
                 });
 
-                /* PLAYER LEFT */
+                // PLAYER LEFT
 
                 socket.on("player:left", data => {
 
@@ -287,13 +305,20 @@
 
                     GAME.world.players.delete(playerId);
 
+                    GAME.syncRenderer();
+
+                    console.log(
+                        "[WORLD] Player left:",
+                        playerId
+                    );
+
                 });
 
                 return socket;
 
             },
 
-            /* WAIT FOR CONNECTION */
+            // WAIT FOR CONNECTION
 
             waitForConnection(timeout = 10000) {
 
@@ -302,20 +327,30 @@
                     const socket = this.socket;
 
                     if (!socket) {
-                        reject(new Error("Socket not initialized."));
+
+                        reject(
+                            new Error("SOCKET_NOT_INITIALIZED")
+                        );
+
                         return;
+
                     }
 
                     if (socket.connected) {
+
                         resolve(socket);
+
                         return;
+
                     }
 
                     const timer = setTimeout(() => {
 
                         socket.off("connect", onConnect);
 
-                        reject(new Error("Connection timeout."));
+                        reject(
+                            new Error("CONNECTION_TIMEOUT")
+                        );
 
                     }, timeout);
 
@@ -335,9 +370,9 @@
 
         },
 
-        /* =====================================
-           MOVEMENT SYSTEM
-        ===================================== */
+        // ==================================
+        // MOVEMENT SYSTEM
+        // ==================================
 
         movement: {
 
@@ -354,20 +389,28 @@
             },
 
             lastDirection: "down",
+
             lastUpdate: 0,
             lastNetworkUpdate: 0,
+
             animationFrame: null,
+
             joystickActive: false,
+
             keys: new Set(),
 
             start() {
 
-                if (this.animationFrame !== null) return;
+                if (this.animationFrame !== null) {
+                    return;
+                }
 
                 this.lastUpdate = performance.now();
 
                 this.animationFrame =
-                    requestAnimationFrame(time => this.update(time));
+                    requestAnimationFrame(time =>
+                        this.update(time)
+                    );
 
             },
 
@@ -375,7 +418,9 @@
 
                 if (this.animationFrame !== null) {
 
-                    cancelAnimationFrame(this.animationFrame);
+                    cancelAnimationFrame(
+                        this.animationFrame
+                    );
 
                     this.animationFrame = null;
 
@@ -395,9 +440,11 @@
 
             setJoystick(x, y) {
 
-                this.joystick.x = Math.max(-1, Math.min(1, x));
+                this.joystick.x =
+                    Math.max(-1, Math.min(1, x));
 
-                this.joystick.y = Math.max(-1, Math.min(1, y));
+                this.joystick.y =
+                    Math.max(-1, Math.min(1, y));
 
                 this.joystickActive =
                     Math.abs(x) > 0.05 ||
@@ -479,7 +526,10 @@
 
                 }
 
-                if (Math.abs(x) > 0.01 || Math.abs(y) > 0.01) {
+                if (
+                    Math.abs(x) > 0.01 ||
+                    Math.abs(y) > 0.01
+                ) {
 
                     GAME.player.x +=
                         x * this.speed * deltaTime;
@@ -512,19 +562,11 @@
                     GAME.player.direction =
                         this.lastDirection;
 
-                    if (window.ECHO_RENDERER) {
+                    GAME.syncRenderer();
 
-                        window.ECHO_RENDERER.updatePlayer({
-
-                            x: GAME.player.x,
-                            y: GAME.player.y,
-                            name: GAME.player.name
-
-                        });
-
-                    }
-
-                    if (time - this.lastNetworkUpdate >= 100) {
+                    if (
+                        time - this.lastNetworkUpdate >= 100
+                    ) {
 
                         this.sendPosition();
 
@@ -543,7 +585,8 @@
 
             sendPosition() {
 
-                const socket = GAME.network.socket;
+                const socket =
+                    GAME.network.socket;
 
                 if (!socket?.connected) return;
 
@@ -559,25 +602,65 @@
 
         },
 
-        /* =====================================
-           ENTER WORLD
-        ===================================== */
+        // ==================================
+        // RENDERER SYNCHRONIZATION
+        // ==================================
+
+        syncRenderer() {
+
+            const renderer =
+                window.ECHO_WORLD_RENDERER;
+
+            if (!renderer) return;
+
+            // Update local player
+
+            renderer.updatePlayer({
+
+                id: GAME.player.id,
+
+                x: GAME.player.x,
+                y: GAME.player.y,
+
+                name: GAME.player.name,
+
+                direction: GAME.player.direction
+
+            });
+
+            // Update remote players
+
+            GAME.world.players.forEach(remote => {
+
+                renderer.updateRemotePlayer(remote);
+
+            });
+
+        },
+
+        // ==================================
+        // ENTER WORLD
+        // ==================================
 
         async enterWorld(characterId) {
 
             if (!characterId) {
-                throw new Error("กรุณาเลือกตัวละคร");
+
+                throw new Error(
+                    "กรุณาเลือกตัวละคร"
+                );
+
             }
 
             if (!window.ECHO_AUTH?.getToken()) {
-                throw new Error("กรุณาเข้าสู่ระบบก่อน");
+
+                throw new Error(
+                    "กรุณาเข้าสู่ระบบก่อน"
+                );
+
             }
 
             const socket = this.network.connect();
-
-            if (!socket) {
-                throw new Error("ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้");
-            }
 
             await this.network.waitForConnection();
 
@@ -610,7 +693,35 @@
 
                         }
 
+                        this.world.currentMap =
+                            this.player.map ||
+                            this.world.currentMap;
+
+                        this.world.players.clear();
+
+                        if (Array.isArray(result.players)) {
+
+                            result.players.forEach(remote => {
+
+                                if (
+                                    remote?.id &&
+                                    remote.id !== this.player.id
+                                ) {
+
+                                    this.world.players.set(
+                                        remote.id,
+                                        remote
+                                    );
+
+                                }
+
+                            });
+
+                        }
+
                         this.state.playing = true;
+
+                        this.syncRenderer();
 
                         this.movement.start();
 
@@ -623,51 +734,62 @@
 
         },
 
-        /* =====================================
-           KEYBOARD INPUT
-        ===================================== */
+        // ==================================
+        // KEYBOARD INPUT
+        // ==================================
 
         initKeyboard() {
 
-            document.addEventListener("keydown", event => {
+            document.addEventListener(
+                "keydown",
+                event => {
 
-                const key = event.key.toLowerCase();
+                    const key =
+                        event.key.toLowerCase();
 
-                const movementKeys = [
-                    "w",
-                    "a",
-                    "s",
-                    "d",
-                    "arrowup",
-                    "arrowdown",
-                    "arrowleft",
-                    "arrowright"
-                ];
+                    const movementKeys = [
+                        "w",
+                        "a",
+                        "s",
+                        "d",
+                        "arrowup",
+                        "arrowdown",
+                        "arrowleft",
+                        "arrowright"
+                    ];
 
-                if (!movementKeys.includes(key)) return;
+                    if (!movementKeys.includes(key)) {
+                        return;
+                    }
 
-                if (!GAME.state.playing) return;
+                    if (!GAME.state.playing) {
+                        return;
+                    }
 
-                if (
-                    event.target instanceof HTMLInputElement ||
-                    event.target instanceof HTMLTextAreaElement
-                ) {
-                    return;
+                    if (
+                        event.target instanceof HTMLInputElement ||
+                        event.target instanceof HTMLTextAreaElement
+                    ) {
+                        return;
+                    }
+
+                    event.preventDefault();
+
+                    GAME.movement.keys.add(key);
+
                 }
+            );
 
-                event.preventDefault();
+            document.addEventListener(
+                "keyup",
+                event => {
 
-                GAME.movement.keys.add(key);
+                    GAME.movement.keys.delete(
+                        event.key.toLowerCase()
+                    );
 
-            });
-
-            document.addEventListener("keyup", event => {
-
-                GAME.movement.keys.delete(
-                    event.key.toLowerCase()
-                );
-
-            });
+                }
+            );
 
             window.addEventListener("blur", () => {
 
@@ -680,13 +802,17 @@
 
         },
 
-        /* =====================================
-           MOBILE JOYSTICK
-        ===================================== */
+        // ==================================
+        // MOBILE JOYSTICK
+        // ==================================
+
+        joystickElement: null,
 
         initJoystick() {
 
-            if (document.getElementById("mobile-joystick")) {
+            if (
+                document.getElementById("mobile-joystick")
+            ) {
                 return;
             }
 
@@ -741,17 +867,7 @@
 
                     box-shadow: 0 3px 10px rgba(0,0,0,0.4);
 
-                    transform: translate(0, 0);
-
                     pointer-events: none;
-
-                }
-
-                @media (pointer: coarse) {
-
-                    #mobile-joystick.active {
-                        display: flex;
-                    }
 
                 }
 
@@ -762,11 +878,15 @@
             const gameScreen =
                 document.getElementById("game-screen");
 
-            const joystick = document.createElement("div");
+            if (!gameScreen) return;
+
+            const joystick =
+                document.createElement("div");
 
             joystick.id = "mobile-joystick";
 
-            const knob = document.createElement("div");
+            const knob =
+                document.createElement("div");
 
             knob.id = "mobile-joystick-knob";
 
@@ -780,7 +900,8 @@
 
             function moveJoystick(event) {
 
-                const rect = joystick.getBoundingClientRect();
+                const rect =
+                    joystick.getBoundingClientRect();
 
                 const centerX =
                     rect.left + rect.width / 2;
@@ -814,49 +935,69 @@
 
                 pointerId = null;
 
-                joystick.classList.remove("pressed");
-
-                knob.style.transform = "translate(0, 0)";
+                knob.style.transform =
+                    "translate(0, 0)";
 
                 GAME.movement.setJoystick(0, 0);
 
             }
 
-            joystick.addEventListener("pointerdown", event => {
+            joystick.addEventListener(
+                "pointerdown",
+                event => {
 
-                if (!GAME.state.playing) return;
+                    if (!GAME.state.playing) return;
 
-                event.preventDefault();
+                    event.preventDefault();
 
-                pointerId = event.pointerId;
+                    pointerId = event.pointerId;
 
-                joystick.setPointerCapture(pointerId);
+                    joystick.setPointerCapture(
+                        pointerId
+                    );
 
-                moveJoystick(event);
+                    moveJoystick(event);
 
-            });
+                }
+            );
 
-            joystick.addEventListener("pointermove", event => {
+            joystick.addEventListener(
+                "pointermove",
+                event => {
 
-                if (event.pointerId !== pointerId) return;
+                    if (event.pointerId !== pointerId) {
+                        return;
+                    }
 
-                event.preventDefault();
+                    event.preventDefault();
 
-                moveJoystick(event);
+                    moveJoystick(event);
 
-            });
+                }
+            );
 
-            joystick.addEventListener("pointerup", event => {
+            joystick.addEventListener(
+                "pointerup",
+                event => {
 
-                if (event.pointerId !== pointerId) return;
+                    if (event.pointerId !== pointerId) {
+                        return;
+                    }
 
-                releaseJoystick();
+                    releaseJoystick();
 
-            });
+                }
+            );
 
-            joystick.addEventListener("pointercancel", releaseJoystick);
+            joystick.addEventListener(
+                "pointercancel",
+                releaseJoystick
+            );
 
-            joystick.addEventListener("lostpointercapture", releaseJoystick);
+            joystick.addEventListener(
+                "lostpointercapture",
+                releaseJoystick
+            );
 
             this.joystickElement = joystick;
 
@@ -866,7 +1007,13 @@
 
             if (!this.joystickElement) return;
 
-            this.joystickElement.classList.add("active");
+            if (
+                window.matchMedia("(pointer: coarse)").matches
+            ) {
+
+                this.joystickElement.classList.add("active");
+
+            }
 
         },
 
@@ -880,70 +1027,85 @@
 
         },
 
-        /* =====================================
-           INITIALIZE
-        ===================================== */
+        // ==================================
+        // INITIALIZE
+        // ==================================
 
         init() {
 
             if (this.state.initialized) return;
 
-            console.log("=================================");
-            console.log("ECHO ISLES RPG", window.GAME_CONFIG.GAME.VERSION);
-            console.log("Game Controller Initialized");
-            console.log("=================================");
+            console.log(
+                "================================="
+            );
+
+            console.log(
+                "ECHO ISLES RPG",
+                window.GAME_CONFIG.GAME.VERSION
+            );
+
+            console.log(
+                "Game Controller Initialized"
+            );
+
+            console.log(
+                "================================="
+            );
 
             this.initKeyboard();
 
             this.initJoystick();
 
             this.state.initialized = true;
-
             this.state.loading = false;
 
         }
 
     };
 
+    // ======================================
+    // GLOBAL GAME OBJECT
+    // ======================================
+
     window.ECHO_GAME = GAME;
 
-    /* =====================================
-       DOCUMENT READY
-    ===================================== */
+    // ======================================
+    // DOCUMENT READY
+    // ======================================
 
-    document.addEventListener("DOMContentLoaded", () => {
+    document.addEventListener(
+        "DOMContentLoaded",
+        () => {
 
-        GAME.init();
+            GAME.init();
 
-        document.addEventListener("echo:world-entered", () => {
+            document.addEventListener(
+                "echo:world-entered",
+                () => {
 
-            GAME.showJoystick();
+                    GAME.showJoystick();
 
-            if (window.ECHO_RENDERER) {
+                    GAME.syncRenderer();
 
-                window.ECHO_RENDERER.updatePlayer({
+                    if (window.ECHO_WORLD_RENDERER) {
 
-                    x: GAME.player.x,
-                    y: GAME.player.y,
-                    name: GAME.player.name
+                        window.ECHO_WORLD_RENDERER.start();
+
+                    }
+
+                }
+            );
+
+            document.getElementById("leave-world")
+                ?.addEventListener("click", () => {
+
+                    GAME.hideJoystick();
+
+                    GAME.movement.stop();
 
                 });
 
-                window.ECHO_RENDERER.start();
-
-            }
-
-        });
-
-        document.getElementById("leave-world")
-            ?.addEventListener("click", () => {
-
-                GAME.hideJoystick();
-
-                GAME.movement.stop();
-
-            });
-
-    });
+        }
+    );
 
 })();
