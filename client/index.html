@@ -24,6 +24,8 @@
         <div class="stars"></div>
     </div>
 
+    <!-- MAIN MENU -->
+
     <main class="main-menu">
 
         <div class="logo-container">
@@ -35,7 +37,6 @@
             </p>
         </div>
 
-        <!-- MAIN MENU -->
         <div class="menu-buttons" id="main-menu">
 
             <button class="menu-button primary" id="start-game">
@@ -57,6 +58,7 @@
         </div>
 
         <!-- ACCOUNT PANEL -->
+
         <section id="account-panel" hidden>
 
             <h2>PLAYER ACCOUNT</h2>
@@ -67,19 +69,13 @@
 
                     <h3>LOGIN</h3>
 
-                    <input
-                        type="text"
-                        id="login-identifier"
+                    <input type="text" id="login-identifier"
                         placeholder="Username or Email"
-                        autocomplete="username"
-                    >
+                        autocomplete="username">
 
-                    <input
-                        type="password"
-                        id="login-password"
+                    <input type="password" id="login-password"
                         placeholder="Password"
-                        autocomplete="current-password"
-                    >
+                        autocomplete="current-password">
 
                     <button class="menu-button primary" id="login-submit">
                         LOGIN
@@ -91,26 +87,17 @@
 
                     <h3>REGISTER</h3>
 
-                    <input
-                        type="text"
-                        id="register-username"
+                    <input type="text" id="register-username"
                         placeholder="Username"
-                        autocomplete="username"
-                    >
+                        autocomplete="username">
 
-                    <input
-                        type="email"
-                        id="register-email"
+                    <input type="email" id="register-email"
                         placeholder="Email"
-                        autocomplete="email"
-                    >
+                        autocomplete="email">
 
-                    <input
-                        type="password"
-                        id="register-password"
+                    <input type="password" id="register-password"
                         placeholder="Password (8-128 characters)"
-                        autocomplete="new-password"
-                    >
+                        autocomplete="new-password">
 
                     <button class="menu-button primary" id="register-submit">
                         CREATE ACCOUNT
@@ -140,6 +127,7 @@
         </section>
 
         <!-- CHARACTER PANEL -->
+
         <section id="character-panel" class="character-panel" hidden>
 
             <h2>CHARACTER SELECTION</h2>
@@ -154,45 +142,30 @@
 
             <form id="character-form" class="character-form">
 
-                <!-- CHARACTER NAME -->
-                <input
-                    type="text"
-                    id="character-name"
+                <input type="text" id="character-name"
                     placeholder="Character Name"
                     minlength="3"
                     maxlength="20"
-                    required
-                >
+                    required>
 
-                <!-- CHARACTER RACE -->
                 <select id="character-race" required>
-
                     <option value="">Select Race</option>
-
                     <option value="Human">Human</option>
                     <option value="Elf">Elf</option>
                     <option value="Dark Elf">Dark Elf</option>
                     <option value="Dwarf">Dwarf</option>
                     <option value="Beastkin">Beastkin</option>
                     <option value="Dragonkin">Dragonkin</option>
-
                 </select>
 
-                <!-- CHARACTER GENDER -->
                 <select id="character-gender" required>
-
                     <option value="">Select Gender</option>
-
                     <option value="Male">Male</option>
                     <option value="Female">Female</option>
-
                 </select>
 
-                <!-- CHARACTER JOB -->
                 <select id="character-job" required>
-
                     <option value="">Select Job</option>
-
                     <option value="Adventurer">Adventurer</option>
                     <option value="Swordsman">Swordsman</option>
                     <option value="Knight">Knight</option>
@@ -200,36 +173,32 @@
                     <option value="Mage">Mage</option>
                     <option value="Assassin">Assassin</option>
                     <option value="Priest">Priest</option>
-
                 </select>
 
-                <button
-                    type="submit"
+                <button type="submit"
                     id="character-create-submit"
-                    class="character-action"
-                >
+                    class="character-action">
                     CREATE CHARACTER
                 </button>
 
             </form>
 
-            <button
-                type="button"
+            <button type="button"
                 id="character-back"
-                class="character-secondary"
-            >
+                class="character-secondary">
                 BACK TO MENU
             </button>
 
         </section>
 
         <!-- SERVER STATUS -->
+
         <div class="server-status">
 
             <span class="status-indicator" id="status-indicator"></span>
 
             <span id="server-status">
-                CONNECTING TO SERVER...
+                WAITING FOR LOGIN...
             </span>
 
         </div>
@@ -241,11 +210,150 @@
 
     </main>
 
+    <!-- GAME WORLD -->
+
+    <section id="game-screen" hidden>
+
+        <!-- PLAYER STATUS -->
+
+        <header id="game-header">
+
+            <div class="player-information">
+
+                <h2 id="world-player-name">Adventurer</h2>
+
+                <span id="world-player-level">
+                    LV. 1
+                </span>
+
+                <span id="world-player-job">
+                    Adventurer
+                </span>
+
+            </div>
+
+            <div class="player-status-bars">
+
+                <div class="status-bar hp-bar">
+                    <span>HP</span>
+                    <div class="bar-track">
+                        <div id="world-hp-bar" class="bar-fill"></div>
+                    </div>
+                    <span id="world-hp-text">100 / 100</span>
+                </div>
+
+                <div class="status-bar mp-bar">
+                    <span>MP</span>
+                    <div class="bar-track">
+                        <div id="world-mp-bar" class="bar-fill"></div>
+                    </div>
+                    <span id="world-mp-text">100 / 100</span>
+                </div>
+
+                <div class="status-bar exp-bar">
+                    <span>EXP</span>
+                    <div class="bar-track">
+                        <div id="world-exp-bar" class="bar-fill"></div>
+                    </div>
+                </div>
+
+            </div>
+
+            <button id="leave-world" class="game-menu-button">
+                MENU
+            </button>
+
+        </header>
+
+        <!-- MAP -->
+
+        <main id="game-main">
+
+            <div id="game-map-container">
+
+                <canvas id="game-canvas"
+                    width="1280"
+                    height="720">
+                </canvas>
+
+                <div id="map-name">
+                    STARTING VILLAGE
+                </div>
+
+            </div>
+
+            <!-- SIDE PANEL -->
+
+            <aside id="game-sidebar">
+
+                <h3>ADVENTURE MENU</h3>
+
+                <button class="game-action-button" id="inventory-button">
+                    INVENTORY
+                </button>
+
+                <button class="game-action-button" id="equipment-button">
+                    EQUIPMENT
+                </button>
+
+                <button class="game-action-button" id="skills-button">
+                    SKILLS
+                </button>
+
+                <button class="game-action-button" id="quests-button">
+                    QUESTS
+                </button>
+
+                <button class="game-action-button" id="professions-button">
+                    PROFESSIONS
+                </button>
+
+                <button class="game-action-button" id="guild-button">
+                    GUILD
+                </button>
+
+                <div class="world-player-count">
+                    ONLINE PLAYERS:
+                    <span id="world-player-count">1</span>
+                </div>
+
+            </aside>
+
+        </main>
+
+        <!-- CHAT -->
+
+        <footer id="game-footer">
+
+            <div id="chat-messages">
+                <p>Welcome to ECHO ISLES!</p>
+            </div>
+
+            <form id="chat-form">
+
+                <input type="text"
+                    id="chat-input"
+                    maxlength="200"
+                    placeholder="Type a message...">
+
+                <button type="submit">
+                    SEND
+                </button>
+
+            </form>
+
+        </footer>
+
+    </section>
+
+    <!-- NOTIFICATION -->
+
     <div id="notification" class="notification">
         Welcome to ECHO ISLES!
     </div>
 
     <!-- GAME SCRIPTS -->
+
     <script src="/socket.io/socket.io.js"></script>
     <script src="js/config.js"></script>
     <script src="js/auth.js"></script>
@@ -262,6 +370,7 @@
             const mainMenu = $("main-menu");
             const accountPanel = $("account-panel");
             const characterPanel = $("character-panel");
+            const gameScreen = $("game-screen");
 
             const authForms = $("auth-forms");
             const accountProfile = $("account-profile");
@@ -283,6 +392,7 @@
 
                 mainMenu.hidden = true;
                 characterPanel.hidden = true;
+                gameScreen.hidden = true;
                 accountPanel.hidden = false;
 
             }
@@ -291,6 +401,7 @@
 
                 accountPanel.hidden = true;
                 characterPanel.hidden = true;
+                gameScreen.hidden = true;
                 mainMenu.hidden = false;
 
             }
@@ -319,38 +430,16 @@
 
             }
 
-            // SERVER CONNECTION
+            // SERVER STATUS
 
-            if (window.ECHO_GAME) {
+            function updateServerStatus(status) {
 
-                window.ECHO_GAME.network.connect();
+                $("server-status").textContent = status;
 
-                const socket = window.ECHO_GAME.network.socket;
-
-                socket.on("connect", () => {
-
-                    $("server-status").textContent = "SERVER ONLINE";
-                    $("status-indicator").classList.add("online");
-
-                });
-
-                socket.on("disconnect", () => {
-
-                    $("server-status").textContent = "SERVER OFFLINE";
-                    $("status-indicator").classList.remove("online");
-
-                });
-
-                socket.on("connect_error", () => {
-
-                    $("server-status").textContent = "CONNECTION FAILED";
-                    $("status-indicator").classList.remove("online");
-
-                });
-
-            } else {
-
-                $("server-status").textContent = "GAME SYSTEM ERROR";
+                $("status-indicator").classList.toggle(
+                    "online",
+                    status === "SERVER ONLINE"
+                );
 
             }
 
@@ -359,6 +448,7 @@
             $("account-button").addEventListener("click", async () => {
 
                 showAccountPanel();
+
                 await updateAccountDisplay();
 
             });
@@ -382,6 +472,8 @@
                     await updateAccountDisplay();
 
                     showNotification("เข้าสู่ระบบสำเร็จ!");
+
+                    updateServerStatus("READY TO CONNECT");
 
                 } catch (error) {
 
@@ -412,7 +504,9 @@
                         password
                     );
 
-                    showNotification("สมัครสมาชิกสำเร็จ กรุณาเข้าสู่ระบบ");
+                    showNotification(
+                        "สมัครสมาชิกสำเร็จ กรุณาเข้าสู่ระบบ"
+                    );
 
                     $("login-identifier").value = username;
                     $("login-password").value = "";
@@ -433,13 +527,18 @@
 
                 updateAccountDisplay();
 
+                updateServerStatus("WAITING FOR LOGIN...");
+
                 showNotification("ออกจากระบบแล้ว");
 
             });
 
             // BACK TO MENU
 
-            $("back-menu").addEventListener("click", showMainMenu);
+            $("back-menu").addEventListener(
+                "click",
+                showMainMenu
+            );
 
             // CHARACTER CREATOR
 
@@ -477,7 +576,7 @@
 
                 }
 
-                showNotification("เตรียมเข้าสู่โลก ECHO ISLES...");
+                showNotification("กรุณาเลือกตัวละคร");
 
                 window.ECHO_CHARACTER_UI.open();
 
@@ -496,6 +595,108 @@
             $("character-back").addEventListener("click", () => {
 
                 showMainMenu();
+
+            });
+
+            // ENTER WORLD UI
+
+            document.addEventListener("echo:world-entered", () => {
+
+                mainMenu.hidden = true;
+                accountPanel.hidden = true;
+                characterPanel.hidden = true;
+                gameScreen.hidden = false;
+
+                const player = window.ECHO_GAME.player;
+
+                $("world-player-name").textContent = player.name;
+                $("world-player-level").textContent =
+                    "LV. " + player.level;
+
+                $("world-player-job").textContent =
+                    player.job || "Adventurer";
+
+                $("world-hp-text").textContent =
+                    player.hp + " / " + player.maxHp;
+
+                $("world-mp-text").textContent =
+                    player.mp + " / " + player.maxMp;
+
+                $("world-hp-bar").style.width =
+                    (player.hp / player.maxHp * 100) + "%";
+
+                $("world-mp-bar").style.width =
+                    (player.mp / player.maxMp * 100) + "%";
+
+                $("world-player-count").textContent =
+                    window.ECHO_GAME.world.players.size + 1;
+
+                updateServerStatus("SERVER ONLINE");
+
+            });
+
+            // CHAT
+
+            $("chat-form").addEventListener("submit", event => {
+
+                event.preventDefault();
+
+                const input = $("chat-input");
+
+                const message = input.value.trim();
+
+                if (!message) return;
+
+                const socket = window.ECHO_GAME.network.socket;
+
+                if (!socket?.connected) {
+
+                    showNotification("ไม่ได้เชื่อมต่อเซิร์ฟเวอร์");
+
+                    return;
+
+                }
+
+                socket.emit("chat:send", {
+                    message
+                });
+
+                input.value = "";
+
+            });
+
+            // LEAVE WORLD
+
+            $("leave-world").addEventListener("click", () => {
+
+                window.ECHO_AUTH.logout();
+
+                showMainMenu();
+
+                updateServerStatus("WAITING FOR LOGIN...");
+
+                showNotification("ออกจากโลกเกมแล้ว");
+
+            });
+
+            // OTHER GAME SYSTEMS
+
+            [
+                "inventory-button",
+                "equipment-button",
+                "skills-button",
+                "quests-button",
+                "professions-button",
+                "guild-button"
+            ].forEach(id => {
+
+                $(id).addEventListener("click", () => {
+
+                    showNotification(
+                        "ระบบนี้กำลังอยู่ระหว่างการพัฒนา"
+                    );
+
+                });
 
             });
 
