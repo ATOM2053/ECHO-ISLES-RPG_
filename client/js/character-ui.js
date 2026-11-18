@@ -1,7 +1,8 @@
+
 /* =========================================
    ECHO ISLES RPG
    CHARACTER CREATOR UI
-   Version: 1.1.0
+   Version: 1.2.0
 ========================================= */
 
 "use strict";
@@ -9,6 +10,7 @@
 window.ECHO_CHARACTER_UI = (() => {
 
     let selectedCharacter = null;
+    let enteringWorld = false;
 
     const $ = id => document.getElementById(id);
 
@@ -22,6 +24,10 @@ window.ECHO_CHARACTER_UI = (() => {
         "Priest"
     ];
 
+    /* =====================================
+       MESSAGE
+    ===================================== */
+
     function showMessage(message) {
 
         const element = $("character-message");
@@ -31,6 +37,39 @@ window.ECHO_CHARACTER_UI = (() => {
         }
 
     }
+
+    /* =====================================
+       ENTER WORLD BUTTON
+    ===================================== */
+
+    function createEnterButton() {
+
+        let button = $("character-enter-world");
+
+        if (button) return button;
+
+        button = document.createElement("button");
+
+        button.id = "character-enter-world";
+        button.className = "character-action";
+        button.textContent = "ENTER WORLD";
+        button.disabled = true;
+
+        button.addEventListener("click", enterWorld);
+
+        const list = $("character-list");
+
+        if (list) {
+            list.insertAdjacentElement("afterend", button);
+        }
+
+        return button;
+
+    }
+
+    /* =====================================
+       CHARACTER CARD
+    ===================================== */
 
     function createCard(character) {
 
@@ -63,9 +102,15 @@ window.ECHO_CHARACTER_UI = (() => {
             selectedCharacter = character;
 
             document.querySelectorAll(".character-card")
-                .forEach(item => item.classList.remove("selected"));
+                .forEach(item => {
+                    item.classList.remove("selected");
+                });
 
             card.classList.add("selected");
+
+            const enterButton = createEnterButton();
+
+            enterButton.disabled = false;
 
             showMessage(
                 "Selected character: " + character.name
@@ -86,6 +131,10 @@ window.ECHO_CHARACTER_UI = (() => {
 
     }
 
+    /* =====================================
+       LOAD CHARACTERS
+    ===================================== */
+
     async function loadCharacters() {
 
         const list = $("character-list");
@@ -93,6 +142,12 @@ window.ECHO_CHARACTER_UI = (() => {
         if (!list) return;
 
         list.replaceChildren();
+
+        selectedCharacter = null;
+
+        const enterButton = createEnterButton();
+
+        enterButton.disabled = true;
 
         showMessage("Loading characters...");
 
@@ -135,6 +190,10 @@ window.ECHO_CHARACTER_UI = (() => {
         }
 
     }
+
+    /* =====================================
+       CREATE CHARACTER
+    ===================================== */
 
     async function createCharacter(event) {
 
@@ -203,6 +262,85 @@ window.ECHO_CHARACTER_UI = (() => {
 
     }
 
+    /* =====================================
+       ENTER WORLD
+    ===================================== */
+
+    async function enterWorld() {
+
+        if (enteringWorld) return;
+
+        if (!selectedCharacter) {
+
+            showMessage("Please select a character first.");
+
+            return;
+
+        }
+
+        if (!window.ECHO_GAME) {
+
+            showMessage("Game controller is unavailable.");
+
+            return;
+
+        }
+
+        const button = $("character-enter-world");
+
+        enteringWorld = true;
+
+        if (button) {
+            button.disabled = true;
+            button.textContent = "CONNECTING...";
+        }
+
+        showMessage("Connecting to game server...");
+
+        try {
+
+            await window.ECHO_GAME.enterWorld(
+                selectedCharacter.id
+            );
+
+            showMessage(
+                "Successfully entered the game server!"
+            );
+
+            $("character-panel").hidden = true;
+
+            console.log(
+                "Selected character:",
+                selectedCharacter.name
+            );
+
+            console.log(
+                "Game world connection established."
+            );
+
+        } catch (error) {
+
+            showMessage(
+                "Unable to enter world: " + error.message
+            );
+
+        } finally {
+
+            enteringWorld = false;
+
+            if (button) {
+                button.disabled = !selectedCharacter;
+                button.textContent = "ENTER WORLD";
+            }
+
+        }
+
+    }
+
+    /* =====================================
+       OPEN / CLOSE
+    ===================================== */
+
     function open() {
 
         $("main-menu").hidden = true;
@@ -223,6 +361,10 @@ window.ECHO_CHARACTER_UI = (() => {
 
     }
 
+    /* =====================================
+       INITIALIZE
+    ===================================== */
+
     function init() {
 
         const form = $("character-form");
@@ -237,15 +379,25 @@ window.ECHO_CHARACTER_UI = (() => {
             back.addEventListener("click", close);
         }
 
+        createEnterButton();
+
     }
 
-    document.addEventListener("DOMContentLoaded", init);
+    document.addEventListener(
+        "DOMContentLoaded",
+        init
+    );
+
+    /* =====================================
+       PUBLIC API
+    ===================================== */
 
     return {
 
         open,
         close,
         loadCharacters,
+        enterWorld,
 
         get selectedCharacter() {
             return selectedCharacter;
