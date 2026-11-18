@@ -1,0 +1,128 @@
+/* =========================================
+   ECHO ISLES RPG
+   CHARACTER SYSTEM UI
+========================================= */
+
+.character-panel {
+    width: min(92%, 700px);
+    margin: 25px auto;
+    padding: 25px;
+    background: rgba(16, 19, 30, 0.96);
+    border: 1px solid rgba(212, 175, 90, 0.35);
+    border-radius: 14px;
+    color: #f5e6c8;
+    font-family: 'Kanit', sans-serif;
+}
+
+.character-panel h2,
+.character-panel h3 {
+    text-align: center;
+    letter-spacing: 2px;
+}
+
+.character-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 14px;
+    margin: 22px 0;
+}
+
+.character-card {
+    padding: 18px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(212, 175, 90, 0.25);
+    border-radius: 10px;
+    text-align: center;
+}
+
+.character-card h3 {
+    margin-top: 0;
+    color: #e8bd70;
+}
+
+.character-card p {
+    margin: 7px 0;
+    color: #c9c5bb;
+}
+
+.character-form {
+    display: grid;
+    gap: 12px;
+    margin-top: 20px;
+}
+
+.character-form input,
+.character-form select {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 12px;
+    color: #f5e6c8;
+    background: #202638;
+    border: 1px solid #555d70;
+    border-radius: 7px;
+    font-family: inherit;
+    font-size: 15px;
+}
+
+.character-form select option {
+    background: #202638;
+}
+
+.character-action {
+    padding: 11px 16px;
+    color: #171923;
+    background: linear-gradient(135deg, #f1d18c, #b88a42);
+    border: none;
+    border-radius: 7px;
+    font-family: inherit;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.character-action:hover {
+    filter: brightness(1.12);
+}
+
+.character-secondary {
+    padding: 10px;
+    color: #f5e6c8;
+    background: transparent;
+    border: 1px solid #777;
+    border-radius: 7px;
+    font-family: inherit;
+    cursor: pointer;
+}
+
+.character-message {
+    margin: 12px 0;
+    text-align: center;
+    color: #e8bd70;
+}
+
+.character-empty {
+    padding: 25px;
+    text-align: center;
+    color: #aaa;
+    border: 1px dashed #555;
+    border-radius: 10px;
+}
+
+.character-card.selected {
+    border-color: #e8bd70;
+    box-shadow: 0 0 15px rgba(232, 189, 112, 0.2);
+}
+
+[hidden] {
+    display: none !important;
+}
+
+@media (max-width: 480px) {
+    .character-panel {
+        padding: 16px;
+    }
+
+    .character-list {
+        grid-template-columns: 1fr;
+    }
+}
