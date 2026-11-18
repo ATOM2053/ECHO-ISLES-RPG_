@@ -1,8 +1,7 @@
-
 /* =========================================
    ECHO ISLES RPG
    CHARACTER CREATOR UI
-   Version: 1.2.0
+   Version: 1.3.0
 ========================================= */
 
 "use strict";
@@ -39,7 +38,7 @@ window.ECHO_CHARACTER_UI = (() => {
     }
 
     /* =====================================
-       ENTER WORLD BUTTON
+       ENTER BUTTON
     ===================================== */
 
     function createEnterButton() {
@@ -299,23 +298,25 @@ window.ECHO_CHARACTER_UI = (() => {
 
         try {
 
-            await window.ECHO_GAME.enterWorld(
+            const result = await window.ECHO_GAME.enterWorld(
                 selectedCharacter.id
             );
 
-            showMessage(
-                "Successfully entered the game server!"
-            );
+            if (!result || !result.success) {
+                throw new Error("Server did not confirm world entry.");
+            }
+
+            showMessage("Entering game world...");
 
             $("character-panel").hidden = true;
 
-            console.log(
-                "Selected character:",
-                selectedCharacter.name
-            );
-
-            console.log(
-                "Game world connection established."
+            document.dispatchEvent(
+                new CustomEvent("echo:world-entered", {
+                    detail: {
+                        character: selectedCharacter,
+                        player: window.ECHO_GAME.player
+                    }
+                })
             );
 
         } catch (error) {
