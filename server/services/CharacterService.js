@@ -1,7 +1,7 @@
 /* =========================================
    ECHO ISLES RPG
    CHARACTER SERVICE
-   Version: 1.0.0
+   Version: 1.1.0
 ========================================= */
 
 "use strict";
@@ -9,10 +9,6 @@
 const { query } = require("../database");
 
 const CharacterService = {
-
-    /* =====================================
-       CHARACTER CONFIGURATION
-    ===================================== */
 
     settings: {
         minNameLength: 3,
@@ -44,10 +40,6 @@ const CharacterService = {
         "Priest"
     ],
 
-    /* =====================================
-       VALIDATE CHARACTER NAME
-    ===================================== */
-
     validateName(name) {
 
         if (typeof name !== "string") {
@@ -66,28 +58,6 @@ const CharacterService = {
         return /^[a-zA-Z0-9ก-๙_ ]+$/.test(value);
 
     },
-
-    /* =====================================
-       VALIDATE CHARACTER DATA
-    ===================================== */
-
-    validateCharacter(data) {
-
-        if (!data || typeof data !== "object") {
-            return false;
-        }
-
-        return (
-            this.validateName(data.name) &&
-            this.races.includes(data.race) &&
-            this.genders.includes(data.gender)
-        );
-
-    },
-
-    /* =====================================
-       GET PLAYER CHARACTERS
-    ===================================== */
 
     async getCharacters(accountId) {
 
@@ -122,10 +92,6 @@ const CharacterService = {
 
     },
 
-    /* =====================================
-       GET CHARACTER BY ID
-    ===================================== */
-
     async getCharacter(accountId, characterId) {
 
         if (!accountId || !characterId) {
@@ -153,19 +119,12 @@ const CharacterService = {
               AND user_id = $2
             LIMIT 1
             `,
-            [
-                characterId,
-                accountId
-            ]
+            [characterId, accountId]
         );
 
         return result.rows[0] || null;
 
     },
-
-    /* =====================================
-       CREATE CHARACTER
-    ===================================== */
 
     async createCharacter(accountId, data) {
 
@@ -173,10 +132,26 @@ const CharacterService = {
             throw new Error("INVALID_ACCOUNT");
         }
 
-        if (!this.validateCharacter(data)) {
+        if (!data || typeof data !== "object") {
             throw new Error("INVALID_CHARACTER_DATA");
         }
 
+        // Validate name
+        if (!this.validateName(data.name)) {
+            throw new Error("INVALID_CHARACTER_NAME");
+        }
+
+        // Validate race
+        if (!this.races.includes(data.race)) {
+            throw new Error("INVALID_CHARACTER_RACE");
+        }
+
+        // Validate gender
+        if (!this.genders.includes(data.gender)) {
+            throw new Error("INVALID_CHARACTER_GENDER");
+        }
+
+        // Check character limit
         const existing = await query(
             `
             SELECT COUNT(*)::int AS total
@@ -190,7 +165,7 @@ const CharacterService = {
             existing.rows[0].total >=
             this.settings.maxCharacters
         ) {
-            throw new Error("CHARACTER_LIMIT_REACHED");
+            throw new Error("MAX_CHARACTERS_REACHED");
         }
 
         try {
@@ -262,11 +237,7 @@ const CharacterService = {
 
         }
 
-    },
-
-    /* =====================================
-       EXPORT SERVICE
-    ===================================== */
+    }
 
 };
 
