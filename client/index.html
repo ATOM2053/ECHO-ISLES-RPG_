@@ -15,6 +15,7 @@
 
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/ui.css">
+    <link rel="stylesheet" href="css/character.css">
 </head>
 
 <body>
@@ -34,7 +35,7 @@
             </p>
         </div>
 
-        <!-- Main Menu -->
+        <!-- MAIN MENU -->
         <div class="menu-buttons" id="main-menu">
 
             <button class="menu-button primary" id="start-game">
@@ -55,7 +56,7 @@
 
         </div>
 
-        <!-- Account Panel -->
+        <!-- ACCOUNT PANEL -->
         <section id="account-panel" hidden>
 
             <h2>PLAYER ACCOUNT</h2>
@@ -138,9 +139,75 @@
 
         </section>
 
+        <!-- CHARACTER PANEL -->
+        <section id="character-panel" class="character-panel" hidden>
+
+            <h2>CHARACTER SELECTION</h2>
+
+            <p id="character-message" class="character-message"></p>
+
+            <div id="character-list" class="character-list"></div>
+
+            <div class="divider"></div>
+
+            <h3>CREATE NEW CHARACTER</h3>
+
+            <form id="character-form" class="character-form">
+
+                <input
+                    type="text"
+                    id="character-name"
+                    placeholder="Character Name"
+                    minlength="3"
+                    maxlength="20"
+                    required
+                >
+
+                <select id="character-race" required>
+                    <option value="">Select Race</option>
+                    <option value="Human">Human</option>
+                    <option value="Elf">Elf</option>
+                    <option value="Dwarf">Dwarf</option>
+                    <option value="Orc">Orc</option>
+                    <option value="Beastkin">Beastkin</option>
+                </select>
+
+                <select id="character-gender" required>
+                    <option value="">Select Gender</option>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                    <option value="Other">Other</option>
+                </select>
+
+                <button
+                    type="submit"
+                    id="character-create-submit"
+                    class="character-action"
+                >
+                    CREATE CHARACTER
+                </button>
+
+            </form>
+
+            <button
+                type="button"
+                id="character-back"
+                class="character-secondary"
+            >
+                BACK TO MENU
+            </button>
+
+        </section>
+
+        <!-- SERVER STATUS -->
         <div class="server-status">
+
             <span class="status-indicator" id="status-indicator"></span>
-            <span id="server-status">CONNECTING TO SERVER...</span>
+
+            <span id="server-status">
+                CONNECTING TO SERVER...
+            </span>
+
         </div>
 
         <footer class="footer">
@@ -154,10 +221,13 @@
         Welcome to ECHO ISLES!
     </div>
 
+    <!-- GAME SCRIPTS -->
     <script src="/socket.io/socket.io.js"></script>
     <script src="js/config.js"></script>
     <script src="js/auth.js"></script>
+    <script src="js/characters.js"></script>
     <script src="js/main.js"></script>
+    <script src="js/character-ui.js"></script>
 
     <script>
 
@@ -167,6 +237,8 @@
 
             const mainMenu = $("main-menu");
             const accountPanel = $("account-panel");
+            const characterPanel = $("character-panel");
+
             const authForms = $("auth-forms");
             const accountProfile = $("account-profile");
 
@@ -186,6 +258,7 @@
             function showAccountPanel() {
 
                 mainMenu.hidden = true;
+                characterPanel.hidden = true;
                 accountPanel.hidden = false;
 
             }
@@ -193,6 +266,7 @@
             function showMainMenu() {
 
                 accountPanel.hidden = true;
+                characterPanel.hidden = true;
                 mainMenu.hidden = false;
 
             }
@@ -221,7 +295,7 @@
 
             }
 
-            // Server connection
+            // SERVER CONNECTION
 
             if (window.ECHO_GAME) {
 
@@ -256,7 +330,7 @@
 
             }
 
-            // Account button
+            // ACCOUNT
 
             $("account-button").addEventListener("click", async () => {
 
@@ -265,7 +339,7 @@
 
             });
 
-            // Login
+            // LOGIN
 
             $("login-submit").addEventListener("click", async () => {
 
@@ -293,7 +367,7 @@
 
             });
 
-            // Register
+            // REGISTER
 
             $("register-submit").addEventListener("click", async () => {
 
@@ -317,7 +391,7 @@
                     showNotification("สมัครสมาชิกสำเร็จ กรุณาเข้าสู่ระบบ");
 
                     $("login-identifier").value = username;
-                    $("login-password").value = password;
+                    $("login-password").value = "";
 
                 } catch (error) {
 
@@ -327,7 +401,7 @@
 
             });
 
-            // Logout
+            // LOGOUT
 
             $("logout-button").addEventListener("click", () => {
 
@@ -339,11 +413,31 @@
 
             });
 
-            // Back
+            // BACK TO MENU
 
             $("back-menu").addEventListener("click", showMainMenu);
 
-            // Start Game
+            // CHARACTER CREATOR
+
+            $("create-character").addEventListener("click", async () => {
+
+                const account = await window.ECHO_AUTH.getProfile();
+
+                if (!account) {
+
+                    showNotification("กรุณาเข้าสู่ระบบก่อน");
+
+                    showAccountPanel();
+
+                    return;
+
+                }
+
+                window.ECHO_CHARACTER_UI.open();
+
+            });
+
+            // START GAME
 
             $("start-game").addEventListener("click", async () => {
 
@@ -361,29 +455,23 @@
 
                 showNotification("เตรียมเข้าสู่โลก ECHO ISLES...");
 
-            });
-
-            $("create-character").addEventListener("click", async () => {
-
-                const account = await window.ECHO_AUTH.getProfile();
-
-                if (!account) {
-
-                    showNotification("กรุณาเข้าสู่ระบบก่อน");
-
-                    showAccountPanel();
-
-                    return;
-
-                }
-
-                showNotification("ระบบสร้างตัวละครกำลังพัฒนา");
+                window.ECHO_CHARACTER_UI.open();
 
             });
+
+            // SETTINGS
 
             $("settings").addEventListener("click", () => {
 
                 showNotification("Settings coming soon!");
+
+            });
+
+            // CHARACTER BACK
+
+            $("character-back").addEventListener("click", () => {
+
+                showMainMenu();
 
             });
 
