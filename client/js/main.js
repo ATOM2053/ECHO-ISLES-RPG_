@@ -1,21 +1,24 @@
 /* =========================================
    ECHO ISLES RPG
-   Main Game Controller
+   MAIN GAME CONTROLLER
+   Version: 0.4.0
 ========================================= */
 
-(() => {
-    "use strict";
+"use strict";
 
-    // ตรวจสอบการตั้งค่าเกม
+(() => {
+
     if (!window.GAME_CONFIG) {
         console.error("Game configuration not found!");
         return;
     }
 
-    // สร้างพื้นที่หลักของระบบเกม
-    window.ECHO_GAME = {
+    const GAME = {
 
-        // สถานะเกม
+        /* =====================================
+           GAME STATE
+        ===================================== */
+
         state: {
             initialized: false,
             connected: false,
@@ -23,12 +26,19 @@
             loading: true
         },
 
-        // ข้อมูลผู้เล่น
+        /* =====================================
+           PLAYER
+        ===================================== */
+
         player: {
             id: null,
+            characterId: null,
+            accountId: null,
+
             name: "Adventurer",
             race: "Human",
             gender: "Male",
+            job: "Adventurer",
 
             level: 1,
             experience: 0,
@@ -48,120 +58,359 @@
             map: "starting_village"
         },
 
-        // ข้อมูลโลก
+        /* =====================================
+           WORLD
+        ===================================== */
+
         world: {
             currentMap: "starting_village",
+
             players: new Map(),
             monsters: new Map(),
             npcs: new Map()
         },
 
-        // ระบบออนไลน์
+        /* =====================================
+           NETWORK
+        ===================================== */
+
         network: {
+
             socket: null,
 
             connect() {
+
+                const token = window.ECHO_AUTH?.getToken();
+
+                if (!token) {
+                    console.warn(
+                        "Cannot connect: Authentication required."
+                    );
+                    return null;
+                }
+
                 if (typeof window.io !== "function") {
                     console.error("Socket.IO is not loaded.");
-                    return;
+                    return null;
                 }
 
                 if (this.socket?.connected) {
-                    return;
+                    return this.socket;
                 }
 
-                this.socket = window.io({
+                if (this.socket) {
+                    this.socket.disconnect();
+                    this.socket = null;
+                }
+
+                const socket = window.io({
+
                     path: window.GAME_CONFIG.NETWORK.SOCKET_PATH,
-                    reconnection: window.GAME_CONFIG.NETWORK.RECONNECT,
+
+                    auth: {
+                        token
+                    },
+
+                    reconnection:
+                        window.GAME_CONFIG.NETWORK.RECONNECT,
+
                     reconnectionAttempts:
                         window.GAME_CONFIG.NETWORK.RECONNECT_ATTEMPTS,
+
                     reconnectionDelay:
                         window.GAME_CONFIG.NETWORK.RECONNECT_DELAY
+
                 });
 
-                this.socket.on("connect", () => {
-                    window.ECHO_GAME.state.connected = true;
+                this.socket = socket;
+
+                /* CONNECTION */
+
+                socket.on("connect", () => {
+
+                    GAME.state.connected = true;
 
                     console.log(
                         "Connected to ECHO ISLES server:",
-                        this.socket.id
+                        socket.id
                     );
+
                 });
 
-                this.socket.on("disconnect", () => {
-                    window.ECHO_GAME.state.connected = false;
+                /* DISCONNECTION */
 
-                    console.log("Disconnected from game server.");
+                socket.on("disconnect", (reason) => {
+
+                    GAME.state.connected = false;
+                    GAME.state.playing = false;
+
+                    console.log(
+                        "Disconnected from server:",
+                        reason
+                    );
+
                 });
 
-                this.socket.on("connect_error", (error) => {
-                    console.error("Connection error:", error.message);
+                /* CONNECTION ERROR */
+
+                socket.on("connect_error", (error) => {
+
+                    GAME.state.connected = false;
+
+                    console.error(
+                        "Socket connection error:",
+                        error.message
+                    );
+
                 });
 
-                this.socket.on("world:init", (data) => {
+                /* WORLD INITIALIZATION */
+
+                socket.on("world:init", (data) => {
+
                     if (!data) return;
 
-                    window.ECHO_GAME.player = {
-                        ...window.ECHO_GAME.player,
-                        ...data.self
-                    };
+                    if (data.self) {
 
-                    window.ECHO_GAME.world.players.clear();
+                        GAME.player = {
+                            ...GAME.player,
+                            ...data.self
+                        };
 
-                    for (const player of data.players || []) {
-                        window.ECHO_GAME.world.players.set(
-                            player.id,
-                            player
-                        );
+                        GAME.world.currentMap =
+                            data.self.map ||
+                            GAME.world.currentMap;
+
                     }
 
-                    console.log("World data received.");
+                    GAME.world.players.clear();
+
+                    if (Array.isArray(data.players)) {
+
+                        data.players.forEach(player => {
+
+                            if (player.id !== GAME.player.id) {
+
+                                GAME.world.players.set(
+                                    player.id,
+                                    player
+                                );
+
+                            }
+
+                        });
+
+                    }
+
+                    GAME.state.playing = true;
+
+                    console.log("Entered game world!");
+
                 });
 
-                this.socket.on("player:joined", (player) => {
-                    if (!player?.id) return;
+                /* PLAYER JOINED */
 
-                    window.ECHO_GAME.world.players.set(
+                socket.on("player:joined", (player) => {
+
+                    if (!player || !player.id) return;
+
+                    if (player.id === GAME.player.id) return;
+
+                    GAME.world.players.set(
                         player.id,
                         player
                     );
+
+                    console.log(
+                        "Player joined:",
+                        player.name
+                    );
+
                 });
 
-                this.socket.on("player:moved", (player) => {
-                    if (!player?.id) return;
+                /* PLAYER MOVED */
 
-                    window.ECHO_GAME.world.players.set(
+                socket.on("player:moved", (player) => {
+
+                    if (!player || !player.id) return;
+
+                    GAME.world.players.set(
                         player.id,
                         player
                     );
+
                 });
 
-                this.socket.on("player:left", (playerId) => {
-                    window.ECHO_GAME.world.players.delete(playerId);
+                /* PLAYER LEFT */
+
+                socket.on("player:left", (data) => {
+
+                    const playerId =
+                        typeof data === "string"
+                            ? data
+                            : data?.id;
+
+                    if (!playerId) return;
+
+                    GAME.world.players.delete(playerId);
+
                 });
+
+                return socket;
+
+            },
+
+            /* =================================
+               WAIT FOR CONNECTION
+            ================================= */
+
+            waitForConnection(timeout = 10000) {
+
+                return new Promise((resolve, reject) => {
+
+                    const socket = this.socket;
+
+                    if (!socket) {
+                        reject(
+                            new Error("Socket is not initialized.")
+                        );
+                        return;
+                    }
+
+                    if (socket.connected) {
+                        resolve(socket);
+                        return;
+                    }
+
+                    const timer = setTimeout(() => {
+
+                        socket.off("connect", onConnect);
+
+                        reject(
+                            new Error("Connection timeout.")
+                        );
+
+                    }, timeout);
+
+                    const onConnect = () => {
+
+                        clearTimeout(timer);
+
+                        resolve(socket);
+
+                    };
+
+                    socket.once("connect", onConnect);
+
+                });
+
             }
+
         },
 
-        // เริ่มต้นเกม
+        /* =====================================
+           ENTER WORLD
+        ===================================== */
+
+        async enterWorld(characterId) {
+
+            if (!characterId) {
+                throw new Error("กรุณาเลือกตัวละคร");
+            }
+
+            if (!window.ECHO_AUTH?.getToken()) {
+                throw new Error("กรุณาเข้าสู่ระบบก่อน");
+            }
+
+            const socket = this.network.connect();
+
+            if (!socket) {
+                throw new Error("ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้");
+            }
+
+            await this.network.waitForConnection();
+
+            return new Promise((resolve, reject) => {
+
+                socket.emit(
+                    "world:enter",
+                    { characterId },
+                    (result) => {
+
+                        if (!result || !result.success) {
+
+                            reject(
+                                new Error(
+                                    result?.message ||
+                                    "ไม่สามารถเข้าโลกเกมได้"
+                                )
+                            );
+
+                            return;
+
+                        }
+
+                        if (result.player) {
+
+                            this.player = {
+                                ...this.player,
+                                ...result.player
+                            };
+
+                        }
+
+                        this.state.playing = true;
+
+                        resolve(result);
+
+                    }
+                );
+
+            });
+
+        },
+
+        /* =====================================
+           INITIALIZE
+        ===================================== */
+
         init() {
+
             if (this.state.initialized) return;
 
-            console.log("--------------------------------");
-            console.log("ECHO ISLES RPG");
-            console.log("Version:", GAME_CONFIG.GAME.VERSION);
-            console.log("Initializing game...");
-            console.log("--------------------------------");
+            console.log(
+                "================================="
+            );
+
+            console.log(
+                "ECHO ISLES RPG",
+                window.GAME_CONFIG.GAME.VERSION
+            );
+
+            console.log(
+                "Game Controller Initialized"
+            );
+
+            console.log(
+                "================================="
+            );
 
             this.state.initialized = true;
             this.state.loading = false;
 
-            console.log("Game core initialized.");
         }
+
     };
 
-    // เริ่มต้นระบบเมื่อหน้าเว็บโหลดเสร็จ
-    document.addEventListener("DOMContentLoaded", () => {
-        window.ECHO_GAME.init();
-    });
+    window.ECHO_GAME = GAME;
+
+    /* =====================================
+       DOCUMENT READY
+    ===================================== */
+
+    document.addEventListener(
+        "DOMContentLoaded",
+        () => GAME.init()
+    );
 
 })();
