@@ -1,7 +1,7 @@
 /* =========================================
    ECHO ISLES RPG
    CHARACTER CREATOR UI
-   Version: 1.0.0
+   Version: 1.1.0
 ========================================= */
 
 "use strict";
@@ -11,6 +11,16 @@ window.ECHO_CHARACTER_UI = (() => {
     let selectedCharacter = null;
 
     const $ = id => document.getElementById(id);
+
+    const JOBS = [
+        "Adventurer",
+        "Swordsman",
+        "Knight",
+        "Archer",
+        "Mage",
+        "Assassin",
+        "Priest"
+    ];
 
     function showMessage(message) {
 
@@ -33,6 +43,9 @@ window.ECHO_CHARACTER_UI = (() => {
 
         const race = document.createElement("p");
         race.textContent = "Race: " + character.race;
+
+        const gender = document.createElement("p");
+        gender.textContent = "Gender: " + character.gender;
 
         const level = document.createElement("p");
         level.textContent = "Level: " + character.level;
@@ -60,7 +73,14 @@ window.ECHO_CHARACTER_UI = (() => {
 
         });
 
-        card.append(name, race, level, job, select);
+        card.append(
+            name,
+            race,
+            gender,
+            level,
+            job,
+            select
+        );
 
         return card;
 
@@ -86,7 +106,9 @@ window.ECHO_CHARACTER_UI = (() => {
                 const empty = document.createElement("div");
 
                 empty.className = "character-empty";
-                empty.textContent = "No characters found. Create your first character!";
+
+                empty.textContent =
+                    "No characters found. Create your first character!";
 
                 list.appendChild(empty);
 
@@ -122,7 +144,13 @@ window.ECHO_CHARACTER_UI = (() => {
         const race = $("character-race").value;
         const gender = $("character-gender").value;
 
-        if (!name || !race || !gender) {
+        const jobElement = $("character-job");
+
+        const job = jobElement
+            ? jobElement.value
+            : "Adventurer";
+
+        if (!name || !race || !gender || !job) {
 
             showMessage("Please complete all fields.");
 
@@ -130,7 +158,17 @@ window.ECHO_CHARACTER_UI = (() => {
 
         }
 
+        if (!JOBS.includes(job)) {
+
+            showMessage("Invalid character job.");
+
+            return;
+
+        }
+
         const button = $("character-create-submit");
+
+        if (!button) return;
 
         button.disabled = true;
 
@@ -139,10 +177,15 @@ window.ECHO_CHARACTER_UI = (() => {
             await window.ECHO_CHARACTERS.create({
                 name,
                 race,
-                gender
+                gender,
+                job
             });
 
             $("character-name").value = "";
+
+            if (jobElement) {
+                jobElement.value = "Adventurer";
+            }
 
             showMessage("Character created successfully!");
 
@@ -163,6 +206,7 @@ window.ECHO_CHARACTER_UI = (() => {
     function open() {
 
         $("main-menu").hidden = true;
+
         $("account-panel").hidden = true;
 
         $("character-panel").hidden = false;
@@ -174,6 +218,7 @@ window.ECHO_CHARACTER_UI = (() => {
     function close() {
 
         $("character-panel").hidden = true;
+
         $("main-menu").hidden = false;
 
     }
@@ -197,13 +242,16 @@ window.ECHO_CHARACTER_UI = (() => {
     document.addEventListener("DOMContentLoaded", init);
 
     return {
+
         open,
         close,
         loadCharacters,
 
         get selectedCharacter() {
             return selectedCharacter;
-        }
+        },
+
+        jobs: JOBS
 
     };
 
