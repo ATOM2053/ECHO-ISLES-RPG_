@@ -1,19 +1,50 @@
 /* =========================================
    ECHO ISLES RPG
    WORLD INTERFACE
-   Version: 1.0.0
+   Version: 2.0.0
+   TWOM INSPIRED PIXEL MMORPG UI
 ========================================= */
+
+:root {
+    --world-bg: #101820;
+    --panel-bg: #25343a;
+    --panel-dark: #172329;
+    --panel-light: #35484a;
+
+    --gold: #c6a66a;
+    --gold-light: #e5cb91;
+    --gold-dark: #715733;
+
+    --text: #f5ead1;
+    --text-muted: #c2b18e;
+
+    --hp: #c94747;
+    --mp: #438bd4;
+    --exp: #d9ad43;
+}
+
+/* =====================================
+   GAME SCREEN
+===================================== */
 
 #game-screen {
     position: fixed;
     inset: 0;
     z-index: 100;
+
     display: flex;
     flex-direction: column;
+
+    width: 100%;
+    height: 100%;
     overflow: hidden;
-    color: #f5ead1;
-    background: #101820;
+
+    color: var(--text);
+    background: var(--world-bg);
+
     font-family: Arial, sans-serif;
+    user-select: none;
+    -webkit-user-select: none;
 }
 
 #game-screen[hidden] {
@@ -25,32 +56,52 @@
 ===================================== */
 
 .world-header {
-    min-height: 76px;
+    flex: 0 0 auto;
+
+    min-height: 68px;
+
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 16px;
-    padding: 10px 18px;
-    background: #172630;
-    border-bottom: 2px solid #8b7045;
+
+    gap: 12px;
+    padding: 8px 14px;
+
+    background: linear-gradient(
+        180deg,
+        #35474a,
+        #1b2b31
+    );
+
+    border-bottom: 3px solid var(--gold-dark);
+    box-shadow: 0 2px 8px #0008;
 }
 
 .world-player-info {
     display: flex;
     flex-direction: column;
-    gap: 5px;
-    min-width: 120px;
+    gap: 4px;
+
+    min-width: 0;
 }
 
 #world-player-name {
-    font-size: 18px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+
+    color: var(--gold-light);
+
+    font-size: 16px;
     font-weight: bold;
+
+    text-shadow: 1px 2px #000;
 }
 
 #world-player-level,
 #world-player-job {
-    color: #c5b28e;
-    font-size: 12px;
+    color: var(--text-muted);
+    font-size: 11px;
 }
 
 /* =====================================
@@ -60,54 +111,80 @@
 .world-status {
     display: flex;
     flex-direction: column;
-    gap: 5px;
-    width: min(320px, 40%);
+
+    gap: 4px;
+
+    width: min(300px, 38%);
+    min-width: 100px;
 }
 
 .world-status-row {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
 }
 
 .world-status-label {
-    width: 28px;
-    font-size: 11px;
+    width: 25px;
+    flex: 0 0 25px;
+
+    font-size: 10px;
     font-weight: bold;
 }
 
 .world-bar {
     flex: 1;
-    height: 12px;
+    min-width: 0;
+
+    height: 11px;
+
     overflow: hidden;
-    background: #30343a;
-    border: 1px solid #786c58;
-    border-radius: 3px;
+
+    background: #15191c;
+
+    border: 1px solid #827456;
+    border-radius: 2px;
+
+    box-shadow: inset 0 1px 3px #000;
 }
 
 .world-bar-fill {
-    width: 100%;
     height: 100%;
+    width: 100%;
+
     transition: width 0.2s ease;
 }
 
 #world-hp-bar {
-    background: #d64b4b;
+    background: linear-gradient(
+        180deg,
+        #fa7770,
+        #bd3030
+    );
 }
 
 #world-mp-bar {
-    background: #428bd6;
+    background: linear-gradient(
+        180deg,
+        #75c3fa,
+        #2865b4
+    );
 }
 
 #world-exp-bar {
-    background: #d9ae43;
+    background: linear-gradient(
+        180deg,
+        #ffe37c,
+        #b88a26
+    );
 }
 
 #world-hp-text,
 #world-mp-text {
-    min-width: 65px;
+    flex: 0 0 58px;
+
     text-align: right;
-    font-size: 10px;
+    font-size: 9px;
 }
 
 /* =====================================
@@ -115,16 +192,26 @@
 ===================================== */
 
 #leave-world {
-    padding: 9px 14px;
-    color: white;
-    background: #843b36;
-    border: 1px solid #bd7466;
-    border-radius: 4px;
-    cursor: pointer;
-}
+    flex: 0 0 auto;
 
-#leave-world:hover {
-    background: #a94c43;
+    min-height: 38px;
+    padding: 7px 12px;
+
+    color: white;
+
+    background: linear-gradient(
+        180deg,
+        #a34d45,
+        #71302d
+    );
+
+    border: 1px solid #d18a71;
+    border-radius: 3px;
+
+    font-size: 11px;
+    font-weight: bold;
+
+    cursor: pointer;
 }
 
 /* =====================================
@@ -132,21 +219,32 @@
 ===================================== */
 
 .world-content {
-    flex: 1;
+    flex: 1 1 auto;
+
     display: flex;
+
+    min-width: 0;
     min-height: 0;
-    gap: 10px;
-    padding: 10px;
+
+    gap: 7px;
+    padding: 7px;
 }
 
 .world-main {
-    flex: 1;
+    flex: 1 1 auto;
+
     display: flex;
     flex-direction: column;
+
     min-width: 0;
     min-height: 0;
-    background: #18242b;
-    border: 1px solid #66573e;
+
+    overflow: hidden;
+
+    background: #1a292b;
+
+    border: 2px solid var(--gold-dark);
+    box-shadow: inset 0 0 0 1px #0008;
 }
 
 /* =====================================
@@ -154,11 +252,24 @@
 ===================================== */
 
 #map-name {
-    padding: 9px 12px;
-    color: #e8d4a8;
-    background: #293a3f;
-    font-size: 13px;
-    border-bottom: 1px solid #66573e;
+    flex: 0 0 auto;
+
+    padding: 7px 10px;
+
+    color: var(--gold-light);
+
+    background: linear-gradient(
+        180deg,
+        #405052,
+        #293a3d
+    );
+
+    border-bottom: 1px solid var(--gold-dark);
+
+    font-size: 12px;
+    font-weight: bold;
+
+    text-shadow: 1px 1px #000;
 }
 
 /* =====================================
@@ -167,12 +278,21 @@
 
 #game-canvas {
     display: block;
+
+    flex: 1 1 auto;
+
     width: 100%;
-    flex: 1;
+    height: 100%;
+
+    min-width: 0;
     min-height: 0;
+
     background: #263d32;
+
     image-rendering: pixelated;
     image-rendering: crisp-edges;
+
+    touch-action: none;
 }
 
 /* =====================================
@@ -180,26 +300,50 @@
 ===================================== */
 
 .world-sidebar {
-    width: 150px;
+    flex: 0 0 138px;
+
     display: flex;
     flex-direction: column;
-    gap: 8px;
+
+    gap: 6px;
 }
 
 .world-sidebar button {
     width: 100%;
-    padding: 12px 8px;
-    color: #f5ead1;
-    background: #263941;
-    border: 1px solid #77613f;
-    border-radius: 4px;
-    cursor: pointer;
+    min-height: 43px;
+
+    padding: 9px 8px;
+
+    color: var(--text);
+
+    background: linear-gradient(
+        180deg,
+        #405357,
+        #25383e
+    );
+
+    border: 2px solid #806b45;
+    border-radius: 3px;
+
+    font-size: 12px;
+    font-weight: bold;
+
     text-align: left;
+
+    text-shadow: 1px 1px #000;
+
+    cursor: pointer;
+
+    box-shadow: inset 0 1px #ffffff18;
+}
+
+.world-sidebar button:active {
+    background: #18282d;
+    border-color: var(--gold-light);
 }
 
 .world-sidebar button:hover {
-    background: #3b5158;
-    border-color: #d2ae68;
+    border-color: var(--gold-light);
 }
 
 /* =====================================
@@ -207,18 +351,29 @@
 ===================================== */
 
 .world-footer {
+    flex: 0 0 auto;
+
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 10px;
-    padding: 8px 12px;
-    background: #172630;
-    border-top: 2px solid #8b7045;
-    font-size: 12px;
+
+    gap: 8px;
+
+    padding: 7px 12px;
+
+    background: linear-gradient(
+        180deg,
+        #26383e,
+        #17252b
+    );
+
+    border-top: 2px solid var(--gold-dark);
+
+    font-size: 11px;
 }
 
 #world-player-count {
-    color: #9ed6a2;
+    color: #a8dfa9;
 }
 
 /* =====================================
@@ -226,114 +381,338 @@
 ===================================== */
 
 .world-chat {
-    width: 260px;
+    flex: 0 0 230px;
+
     display: flex;
     flex-direction: column;
-    min-height: 120px;
-    background: #18242b;
-    border: 1px solid #66573e;
+
+    min-width: 0;
+    min-height: 0;
+
+    background: var(--panel-dark);
+
+    border: 2px solid var(--gold-dark);
 }
 
 .world-chat-title {
+    flex: 0 0 auto;
+
     padding: 8px;
-    background: #293a3f;
-    border-bottom: 1px solid #66573e;
+
+    color: var(--gold-light);
+
+    background: var(--panel-light);
+
+    border-bottom: 1px solid var(--gold-dark);
+
     font-size: 12px;
+    font-weight: bold;
 }
 
 #chat-messages {
-    flex: 1;
+    flex: 1 1 auto;
+
     min-height: 0;
+
     overflow-y: auto;
+
     padding: 8px;
-    font-size: 12px;
+
+    font-size: 11px;
+
+    overflow-wrap: anywhere;
 }
 
 #chat-form {
+    flex: 0 0 auto;
+
     display: flex;
+
     gap: 5px;
     padding: 6px;
-    border-top: 1px solid #66573e;
+
+    border-top: 1px solid var(--gold-dark);
 }
 
 #chat-input {
     flex: 1;
     min-width: 0;
-    padding: 8px;
+
+    min-height: 38px;
+
+    padding: 7px;
+
     color: white;
     background: #101820;
-    border: 1px solid #66573e;
-    border-radius: 3px;
+
+    border: 1px solid #776442;
+    border-radius: 2px;
+
+    font-size: 14px;
 }
 
 #chat-form button {
-    padding: 8px 10px;
+    min-width: 48px;
+    min-height: 38px;
+
+    padding: 6px;
+
     color: white;
-    background: #765c36;
-    border: 0;
-    border-radius: 3px;
+
+    background: #80623a;
+
+    border: 1px solid #c5a16a;
+    border-radius: 2px;
+
     cursor: pointer;
 }
 
 /* =====================================
-   RESPONSIVE MOBILE
+   MOBILE PORTRAIT
 ===================================== */
 
 @media (max-width: 700px) {
 
     .world-header {
-        min-height: 65px;
-        gap: 8px;
-        padding: 8px;
-    }
+        min-height: 62px;
 
-    #world-player-name {
-        font-size: 14px;
-    }
-
-    .world-status {
-        width: 38%;
-    }
-
-    #leave-world {
-        padding: 7px;
-        font-size: 10px;
-    }
-
-    .world-content {
-        flex-direction: column;
         gap: 6px;
         padding: 6px;
     }
 
+    #world-player-name {
+        max-width: 105px;
+        font-size: 13px;
+    }
+
+    #world-player-level,
+    #world-player-job {
+        font-size: 9px;
+    }
+
+    .world-status {
+        width: 39%;
+        min-width: 95px;
+    }
+
+    .world-status-label {
+        width: 20px;
+        flex-basis: 20px;
+        font-size: 9px;
+    }
+
+    .world-bar {
+        height: 9px;
+    }
+
+    #world-hp-text,
+    #world-mp-text {
+        flex-basis: 48px;
+        font-size: 8px;
+    }
+
+    #leave-world {
+        min-height: 34px;
+        padding: 5px 7px;
+        font-size: 9px;
+    }
+
+    .world-content {
+        flex-direction: column;
+        gap: 5px;
+        padding: 5px;
+    }
+
     .world-main {
-        flex: 1;
+        flex: 1 1 auto;
+        min-height: 0;
+    }
+
+    #map-name {
+        padding: 6px 8px;
+        font-size: 11px;
     }
 
     .world-sidebar {
+        flex: 0 0 auto;
+
         width: 100%;
+
+        display: flex;
         flex-direction: row;
-        overflow-x: auto;
+
         gap: 5px;
+
+        overflow-x: auto;
+        overflow-y: hidden;
+
+        padding-bottom: 3px;
+
+        scrollbar-width: thin;
     }
 
     .world-sidebar button {
-        flex: 0 0 auto;
-        width: auto;
-        padding: 9px;
-        font-size: 11px;
+        flex: 0 0 76px;
+
+        width: 76px;
+        min-height: 43px;
+
+        padding: 7px 4px;
+
+        font-size: 10px;
         text-align: center;
     }
 
     .world-chat {
+        flex: 0 0 105px;
+
         width: 100%;
-        height: 120px;
-        flex: 0 0 120px;
+        min-height: 105px;
     }
 
-    .world-footer {
-        padding: 6px 8px;
+    .world-chat-title {
+        padding: 5px 7px;
         font-size: 10px;
     }
 
-          }
+    #chat-messages {
+        padding: 5px;
+        font-size: 10px;
+    }
+
+    #chat-form {
+        padding: 4px;
+    }
+
+    #chat-input {
+        min-height: 34px;
+        font-size: 14px;
+    }
+
+    #chat-form button {
+        min-height: 34px;
+        min-width: 43px;
+        font-size: 10px;
+    }
+
+    .world-footer {
+        padding: 5px 7px;
+        font-size: 9px;
+    }
+}
+
+/* =====================================
+   MOBILE LANDSCAPE
+===================================== */
+
+@media (max-width: 900px) and (orientation: landscape) {
+
+    .world-header {
+        min-height: 48px;
+        padding: 4px 8px;
+    }
+
+    .world-content {
+        flex-direction: row;
+        padding: 4px;
+        gap: 4px;
+    }
+
+    .world-main {
+        flex: 1 1 auto;
+    }
+
+    .world-sidebar {
+        flex: 0 0 82px;
+
+        flex-direction: column;
+
+        overflow-y: auto;
+        overflow-x: hidden;
+    }
+
+    .world-sidebar button {
+        flex: 0 0 auto;
+        width: 100%;
+        min-height: 34px;
+        padding: 5px 3px;
+        font-size: 9px;
+        text-align: center;
+    }
+
+    .world-chat {
+        flex: 0 0 155px;
+        min-height: 0;
+    }
+
+    .world-chat-title {
+        padding: 5px;
+    }
+
+    #chat-messages {
+        font-size: 9px;
+    }
+
+    .world-footer {
+        padding: 4px 8px;
+    }
+}
+
+/* =====================================
+   SMALL MOBILE
+===================================== */
+
+@media (max-width: 360px) {
+
+    .world-header {
+        gap: 4px;
+        padding: 5px;
+    }
+
+    #world-player-name {
+        max-width: 85px;
+        font-size: 11px;
+    }
+
+    .world-status {
+        min-width: 85px;
+    }
+
+    #world-hp-text,
+    #world-mp-text {
+        flex-basis: 42px;
+        font-size: 7px;
+    }
+
+    #leave-world {
+        padding: 5px;
+        font-size: 8px;
+    }
+
+    .world-sidebar button {
+        flex-basis: 68px;
+        width: 68px;
+        font-size: 9px;
+    }
+}
+
+/* =====================================
+   TOUCH OPTIMIZATION
+===================================== */
+
+@media (hover: none) and (pointer: coarse) {
+
+    .world-sidebar button,
+    #leave-world,
+    #chat-form button {
+        -webkit-tap-highlight-color: transparent;
+        touch-action: manipulation;
+    }
+
+    .world-sidebar button:active,
+    #leave-world:active,
+    #chat-form button:active {
+        filter: brightness(1.2);
+        transform: translateY(1px);
+    }
+}
