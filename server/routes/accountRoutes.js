@@ -1,7 +1,7 @@
 /* =========================================
    ECHO ISLES RPG
    ACCOUNT API ROUTES
-   Version: 1.0.0
+   Version: 1.1.0
 ========================================= */
 
 "use strict";
@@ -15,10 +15,15 @@ const {
     authenticate
 } = require("../middleware/authMiddleware");
 
+const {
+    authenticationLimiter,
+    registrationLimiter
+} = require("../middleware/rateLimitMiddleware");
+
 const router = express.Router();
 
 /* =========================================
-   ERROR RESPONSES
+   ERROR HANDLER
 ========================================= */
 
 function handleAccountError(error, res) {
@@ -59,118 +64,145 @@ function handleAccountError(error, res) {
    POST /api/account/register
 ========================================= */
 
-router.post("/register", async (req, res) => {
+router.post(
+    "/register",
+    registrationLimiter,
+    async (req, res) => {
 
-    try {
+        try {
 
-        const {
-            username,
-            email,
-            password
-        } = req.body || {};
+            const {
+                username,
+                email,
+                password
+            } = req.body || {};
 
-        const result = await AccountService.register(
-            username,
-            email,
-            password
-        );
+            const result = await AccountService.register(
+                username,
+                email,
+                password
+            );
 
-        return res.status(201).json({
-            success: true,
-            message: "สมัครสมาชิกสำเร็จ",
-            account: result.account
-        });
+            return res.status(201).json({
 
-    } catch (error) {
+                success: true,
 
-        return handleAccountError(error, res);
+                message: "สมัครสมาชิกสำเร็จ",
+
+                account: result.account
+
+            });
+
+        } catch (error) {
+
+            return handleAccountError(error, res);
+
+        }
 
     }
-
-});
+);
 
 /* =========================================
    LOGIN
    POST /api/account/login
 ========================================= */
 
-router.post("/login", async (req, res) => {
+router.post(
+    "/login",
+    authenticationLimiter,
+    async (req, res) => {
 
-    try {
+        try {
 
-        const {
-            identifier,
-            password
-        } = req.body || {};
+            const {
+                identifier,
+                password
+            } = req.body || {};
 
-        const result = await AccountService.login(
-            identifier,
-            password
-        );
+            const result = await AccountService.login(
+                identifier,
+                password
+            );
 
-        const accessToken = TokenService.createToken(
-            result.account
-        );
+            const accessToken = TokenService.createToken(
+                result.account
+            );
 
-        return res.json({
-            success: true,
-            message: "เข้าสู่ระบบสำเร็จ",
+            return res.json({
 
-            account: result.account,
+                success: true,
 
-            accessToken,
+                message: "เข้าสู่ระบบสำเร็จ",
 
-            tokenType: "Bearer",
+                account: result.account,
 
-            expiresIn: TokenService.settings.expiresInSeconds
+                accessToken,
 
-        });
+                tokenType: "Bearer",
 
-    } catch (error) {
+                expiresIn:
+                    TokenService.settings.expiresInSeconds
 
-        return handleAccountError(error, res);
+            });
+
+        } catch (error) {
+
+            return handleAccountError(error, res);
+
+        }
 
     }
-
-});
+);
 
 /* =========================================
    GET PROFILE
    GET /api/account/me
 ========================================= */
 
-router.get("/me", authenticate, async (req, res) => {
+router.get(
+    "/me",
+    authenticate,
+    async (req, res) => {
 
-    try {
+        try {
 
-        const account = await AccountService.getAccount(
-            req.account.id
-        );
+            const account = await AccountService.getAccount(
+                req.account.id
+            );
 
-        if (!account) {
+            if (!account) {
 
-            return res.status(404).json({
-                success: false,
-                message: "ไม่พบบัญชีผู้เล่น"
+                return res.status(404).json({
+
+                    success: false,
+
+                    code: "ACCOUNT_NOT_FOUND",
+
+                    message: "ไม่พบบัญชีผู้เล่น"
+
+                });
+
+            }
+
+            return res.json({
+
+                success: true,
+
+                account
+
             });
+
+        } catch (error) {
+
+            return handleAccountError(error, res);
 
         }
 
-        return res.json({
-            success: true,
-            account
-        });
-
-    } catch (error) {
-
-        return handleAccountError(error, res);
-
     }
-
-});
+);
 
 /* =========================================
-   EXPORT ROUTER
+   EXPORT
 ========================================= */
 
 module.exports = router;
