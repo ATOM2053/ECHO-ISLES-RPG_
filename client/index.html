@@ -1,237 +1,54 @@
 <!DOCTYPE html>
 <html lang="th">
+
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+    <meta name="theme-color" content="#101522">
 
     <title>ECHO ISLES RPG</title>
 
+    <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap"
+          rel="stylesheet">
 
-        body {
-            font-family: 'Kanit', sans-serif;
-            background: #101522;
-            color: #fff;
-            min-height: 100vh;
-            overflow: hidden;
-        }
-
-        button {
-            font-family: inherit;
-            cursor: pointer;
-        }
-
-        /* Background */
-
-        .background {
-            position: fixed;
-            inset: 0;
-            background:
-                linear-gradient(rgba(10,15,25,.65), rgba(10,15,25,.92)),
-                radial-gradient(circle at center, #344d65, #101522 75%);
-            z-index: -1;
-        }
-
-        .stars {
-            position: fixed;
-            inset: 0;
-            pointer-events: none;
-            opacity: .5;
-            background-image:
-                radial-gradient(2px 2px at 20% 30%, white, transparent),
-                radial-gradient(2px 2px at 70% 20%, white, transparent),
-                radial-gradient(2px 2px at 80% 75%, white, transparent),
-                radial-gradient(2px 2px at 30% 80%, white, transparent);
-            background-size: 300px 300px;
-        }
-
-        /* Main Menu */
-
-        .main-menu {
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
-        }
-
-        .menu-container {
-            width: 100%;
-            max-width: 520px;
-            text-align: center;
-        }
-
-        .game-logo {
-            margin-bottom: 35px;
-        }
-
-        .game-logo h1 {
-            font-size: clamp(38px, 9vw, 65px);
-            font-weight: 700;
-            letter-spacing: 5px;
-            color: #f4d38a;
-            text-shadow: 0 4px 20px #d49a45;
-        }
-
-        .game-logo p {
-            color: #aabbd0;
-            letter-spacing: 5px;
-            font-size: 12px;
-            margin-top: 5px;
-        }
-
-        .divider {
-            width: 160px;
-            height: 2px;
-            margin: 22px auto;
-            background: linear-gradient(90deg, transparent, #e5bc71, transparent);
-        }
-
-        .menu-subtitle {
-            color: #c0ccda;
-            margin-bottom: 30px;
-            font-size: 14px;
-        }
-
-        .menu-buttons {
-            display: flex;
-            flex-direction: column;
-            gap: 13px;
-        }
-
-        .menu-btn {
-            width: 100%;
-            padding: 15px;
-            border: 1px solid #6e8199;
-            background: linear-gradient(135deg, #273b53, #182638);
-            color: white;
-            font-size: 17px;
-            border-radius: 8px;
-            transition: .2s;
-        }
-
-        .menu-btn:hover {
-            border-color: #f0ca7d;
-            background: linear-gradient(135deg, #52677e, #263d55);
-            transform: translateY(-2px);
-        }
-
-        .menu-btn.primary {
-            background: linear-gradient(135deg, #bd914a, #795526);
-            border-color: #f1d08c;
-            color: #fff;
-            font-weight: 600;
-        }
-
-        .menu-btn.primary:hover {
-            background: linear-gradient(135deg, #d5aa62, #986c32);
-        }
-
-        /* Server Status */
-
-        .server-status {
-            display: inline-flex;
-            align-items: center;
-            gap: 9px;
-            margin-top: 30px;
-            padding: 9px 18px;
-            background: rgba(0,0,0,.35);
-            border: 1px solid rgba(255,255,255,.12);
-            border-radius: 30px;
-            color: #aabbd0;
-            font-size: 13px;
-        }
-
-        .status-dot {
-            width: 9px;
-            height: 9px;
-            border-radius: 50%;
-            background: #e5ae4b;
-            box-shadow: 0 0 10px currentColor;
-        }
-
-        .status-dot.online {
-            background: #48db91;
-            color: #48db91;
-        }
-
-        .status-dot.offline {
-            background: #f15e5e;
-            color: #f15e5e;
-        }
-
-        .footer {
-            margin-top: 35px;
-            color: #65758a;
-            font-size: 11px;
-        }
-
-        /* Notification */
-
-        .notification {
-            position: fixed;
-            bottom: 25px;
-            left: 50%;
-            transform: translateX(-50%);
-            padding: 12px 22px;
-            background: #26384d;
-            border: 1px solid #8197af;
-            border-radius: 8px;
-            font-size: 13px;
-            opacity: 0;
-            pointer-events: none;
-            transition: .3s;
-            z-index: 100;
-            white-space: nowrap;
-        }
-
-        .notification.show {
-            opacity: 1;
-            bottom: 40px;
-        }
-
-        /* Responsive */
-
-        @media (max-width: 480px) {
-            .game-logo h1 {
-                letter-spacing: 2px;
-            }
-
-            .menu-btn {
-                padding: 14px;
-            }
-        }
-    </style>
+    <!-- Main CSS -->
+    <link rel="stylesheet" href="css/style.css">
 </head>
 
 <body>
 
+    <!-- Background -->
     <div class="background"></div>
     <div class="stars"></div>
 
+    <!-- Main Menu -->
     <main class="main-menu">
 
         <div class="menu-container">
 
+            <!-- Game Logo -->
             <div class="game-logo">
+
                 <h1>ECHO ISLES</h1>
+
                 <p>THE WORLD OF ADVENTURE</p>
+
                 <div class="divider"></div>
+
             </div>
 
             <p class="menu-subtitle">
                 โลกแห่งการผจญภัยกำลังรอคุณอยู่
             </p>
 
+            <!-- Menu Buttons -->
             <div class="menu-buttons">
 
                 <button class="menu-btn primary" id="startButton">
@@ -248,6 +65,7 @@
 
             </div>
 
+            <!-- Server Status -->
             <div class="server-status">
 
                 <span class="status-dot" id="statusDot"></span>
@@ -258,8 +76,10 @@
 
             </div>
 
+            <!-- Footer -->
             <div class="footer">
-                ECHO ISLES RPG © 2026<br>
+                ECHO ISLES RPG © 2026
+                <br>
                 ONLINE MMORPG · VERSION 0.1.0
             </div>
 
@@ -267,100 +87,218 @@
 
     </main>
 
+    <!-- Notification -->
     <div class="notification" id="notification"></div>
 
     <!-- Socket.IO -->
-
     <script src="/socket.io/socket.io.js"></script>
 
     <script>
-        const statusDot = document.getElementById("statusDot");
-        const serverStatus = document.getElementById("serverStatus");
-        const notification = document.getElementById("notification");
+
+        // =====================================
+        // ECHO ISLES RPG
+        // CLIENT MAIN SCRIPT
+        // =====================================
+
+        const statusDot =
+            document.getElementById("statusDot");
+
+        const serverStatus =
+            document.getElementById("serverStatus");
+
+        const notification =
+            document.getElementById("notification");
 
         let socket = null;
         let playerData = null;
 
+
+        // =====================================
+        // NOTIFICATION SYSTEM
+        // =====================================
+
         function showNotification(message) {
+
             notification.textContent = message;
+
             notification.classList.add("show");
 
             setTimeout(() => {
+
                 notification.classList.remove("show");
+
             }, 2500);
+
         }
+
+
+        // =====================================
+        // SERVER STATUS
+        // =====================================
 
         function updateServerStatus(status, text) {
+
             statusDot.className = "status-dot " + status;
+
             serverStatus.textContent = text;
+
         }
 
-        // Connect to game server
+
+        // =====================================
+        // SOCKET.IO CONNECTION
+        // =====================================
 
         if (typeof io !== "undefined") {
 
             socket = io({
+
                 reconnection: true,
+
                 reconnectionAttempts: Infinity,
+
                 reconnectionDelay: 2000
+
             });
+
 
             socket.on("connect", () => {
-                updateServerStatus("online", "เซิร์ฟเวอร์ออนไลน์");
-                showNotification("เชื่อมต่อเซิร์ฟเวอร์สำเร็จ!");
-                console.log("Connected:", socket.id);
+
+                updateServerStatus(
+                    "online",
+                    "เซิร์ฟเวอร์ออนไลน์"
+                );
+
+                showNotification(
+                    "เชื่อมต่อเซิร์ฟเวอร์สำเร็จ!"
+                );
+
+                console.log(
+                    "Connected:",
+                    socket.id
+                );
+
             });
+
 
             socket.on("disconnect", () => {
-                updateServerStatus("offline", "ขาดการเชื่อมต่อ");
+
+                updateServerStatus(
+                    "offline",
+                    "ขาดการเชื่อมต่อ"
+                );
+
             });
+
 
             socket.on("connect_error", (error) => {
-                updateServerStatus("offline", "เชื่อมต่อเซิร์ฟเวอร์ไม่ได้");
+
+                updateServerStatus(
+                    "offline",
+                    "เชื่อมต่อเซิร์ฟเวอร์ไม่ได้"
+                );
+
                 console.error(error);
+
             });
 
+
+            // World Initialization
             socket.on("world:init", (data) => {
+
                 playerData = data.self;
 
-                console.log("Player Data:", playerData);
-                console.log("World Players:", data.players);
+                console.log(
+                    "Player Data:",
+                    playerData
+                );
+
+                console.log(
+                    "World Players:",
+                    data.players
+                );
+
             });
 
+
+            // Player Joined
             socket.on("player:joined", (player) => {
-                console.log("Player joined:", player);
+
+                console.log(
+                    "Player joined:",
+                    player
+                );
+
             });
 
+
+            // Player Left
             socket.on("player:left", (playerId) => {
-                console.log("Player left:", playerId);
+
+                console.log(
+                    "Player left:",
+                    playerId
+                );
+
             });
 
         } else {
 
-            updateServerStatus("offline", "ไม่พบระบบ Socket.IO");
+            updateServerStatus(
+                "offline",
+                "ไม่พบระบบ Socket.IO"
+            );
 
         }
 
-        // Menu Buttons
 
-        document.getElementById("startButton").addEventListener("click", () => {
+        // =====================================
+        // MAIN MENU
+        // =====================================
 
-            if (!socket || !socket.connected) {
-                showNotification("กรุณารอการเชื่อมต่อเซิร์ฟเวอร์");
-                return;
-            }
+        document
+            .getElementById("startButton")
+            .addEventListener("click", () => {
 
-            showNotification("ระบบสร้างตัวละครกำลังพัฒนา");
+                if (!socket || !socket.connected) {
 
-        });
+                    showNotification(
+                        "กรุณารอการเชื่อมต่อเซิร์ฟเวอร์"
+                    );
 
-        document.getElementById("characterButton").addEventListener("click", () => {
-            showNotification("Character Creator กำลังพัฒนา");
-        });
+                    return;
 
-        document.getElementById("settingsButton").addEventListener("click", () => {
-            showNotification("Settings กำลังพัฒนา");
-        });
+                }
+
+                showNotification(
+                    "ระบบสร้างตัวละครกำลังพัฒนา"
+                );
+
+            });
+
+
+        // Character Creator
+        document
+            .getElementById("characterButton")
+            .addEventListener("click", () => {
+
+                showNotification(
+                    "Character Creator กำลังพัฒนา"
+                );
+
+            });
+
+
+        // Settings
+        document
+            .getElementById("settingsButton")
+            .addEventListener("click", () => {
+
+                showNotification(
+                    "Settings กำลังพัฒนา"
+                );
+
+            });
 
     </script>
 
