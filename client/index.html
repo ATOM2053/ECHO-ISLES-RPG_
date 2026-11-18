@@ -4,139 +4,177 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
     <meta name="theme-color" content="#10131e">
 
     <title>ECHO ISLES RPG</title>
 
-    <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
-    <!-- Game CSS -->
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/ui.css">
-
 </head>
 
 <body>
 
-    <!-- Background -->
     <div class="background">
         <div class="stars"></div>
     </div>
 
-    <!-- Main Menu -->
     <main class="main-menu">
 
-        <!-- Logo -->
         <div class="logo-container">
-
-            <h1 class="logo">
-                ECHO <span>ISLES</span>
-            </h1>
-
-            <p class="subtitle">
-                THE WORLD OF ADVENTURE
-            </p>
-
+            <h1 class="logo">ECHO <span>ISLES</span></h1>
+            <p class="subtitle">THE WORLD OF ADVENTURE</p>
             <div class="divider"></div>
-
             <p class="game-description">
                 Explore the world. Create your destiny.
             </p>
-
         </div>
 
-        <!-- Menu Buttons -->
-        <div class="menu-buttons">
+        <!-- Main Menu -->
+        <div class="menu-buttons" id="main-menu">
 
-            <button
-                class="menu-button primary"
-                id="start-game"
-                type="button"
-            >
+            <button class="menu-button primary" id="start-game">
                 START GAME
             </button>
 
-            <button
-                class="menu-button"
-                id="create-character"
-                type="button"
-            >
+            <button class="menu-button" id="create-character">
                 CREATE CHARACTER
             </button>
 
-            <button
-                class="menu-button"
-                id="settings"
-                type="button"
-            >
+            <button class="menu-button" id="settings">
                 SETTINGS
+            </button>
+
+            <button class="menu-button" id="account-button">
+                ACCOUNT
             </button>
 
         </div>
 
-        <!-- Server Status -->
+        <!-- Account Panel -->
+        <section id="account-panel" hidden>
+
+            <h2>PLAYER ACCOUNT</h2>
+
+            <div id="auth-forms">
+
+                <div id="login-form">
+
+                    <h3>LOGIN</h3>
+
+                    <input
+                        type="text"
+                        id="login-identifier"
+                        placeholder="Username or Email"
+                        autocomplete="username"
+                    >
+
+                    <input
+                        type="password"
+                        id="login-password"
+                        placeholder="Password"
+                        autocomplete="current-password"
+                    >
+
+                    <button class="menu-button primary" id="login-submit">
+                        LOGIN
+                    </button>
+
+                </div>
+
+                <div id="register-form">
+
+                    <h3>REGISTER</h3>
+
+                    <input
+                        type="text"
+                        id="register-username"
+                        placeholder="Username"
+                        autocomplete="username"
+                    >
+
+                    <input
+                        type="email"
+                        id="register-email"
+                        placeholder="Email"
+                        autocomplete="email"
+                    >
+
+                    <input
+                        type="password"
+                        id="register-password"
+                        placeholder="Password (8-128 characters)"
+                        autocomplete="new-password"
+                    >
+
+                    <button class="menu-button primary" id="register-submit">
+                        CREATE ACCOUNT
+                    </button>
+
+                </div>
+
+            </div>
+
+            <div id="account-profile" hidden>
+
+                <h3>ACCOUNT INFORMATION</h3>
+
+                <p id="account-username"></p>
+                <p id="account-email"></p>
+
+                <button class="menu-button" id="logout-button">
+                    LOGOUT
+                </button>
+
+            </div>
+
+            <button class="menu-button" id="back-menu">
+                BACK TO MENU
+            </button>
+
+        </section>
+
         <div class="server-status">
-
             <span class="status-indicator" id="status-indicator"></span>
-
-            <span id="server-status">
-                CONNECTING TO SERVER...
-            </span>
-
+            <span id="server-status">CONNECTING TO SERVER...</span>
         </div>
 
-        <!-- Footer -->
         <footer class="footer">
-
-            <p>
-                ECHO ISLES RPG
-            </p>
-
-            <p>
-                VERSION 0.1.0
-            </p>
-
+            <p>ECHO ISLES RPG</p>
+            <p>VERSION 0.1.0</p>
         </footer>
 
     </main>
 
-    <!-- Notification -->
     <div id="notification" class="notification">
         Welcome to ECHO ISLES!
     </div>
 
-    <!-- Socket.IO -->
     <script src="/socket.io/socket.io.js"></script>
-
-    <!-- Game Configuration -->
     <script src="js/config.js"></script>
-
-    <!-- Main Game Controller -->
+    <script src="js/auth.js"></script>
     <script src="js/main.js"></script>
 
-    <!-- Main Menu Controller -->
     <script>
 
-        document.addEventListener("DOMContentLoaded", () => {
+        document.addEventListener("DOMContentLoaded", async () => {
 
-            const startButton = document.getElementById("start-game");
-            const characterButton = document.getElementById("create-character");
-            const settingsButton = document.getElementById("settings");
+            const $ = id => document.getElementById(id);
 
-            const statusText = document.getElementById("server-status");
-            const statusIndicator = document.getElementById("status-indicator");
-            const notification = document.getElementById("notification");
+            const mainMenu = $("main-menu");
+            const accountPanel = $("account-panel");
+            const authForms = $("auth-forms");
+            const accountProfile = $("account-profile");
 
-            // Notification
+            const notification = $("notification");
+
             function showNotification(message) {
 
                 notification.textContent = message;
-
                 notification.classList.add("show");
 
                 setTimeout(() => {
@@ -145,7 +183,46 @@
 
             }
 
-            // Connect to server
+            function showAccountPanel() {
+
+                mainMenu.hidden = true;
+                accountPanel.hidden = false;
+
+            }
+
+            function showMainMenu() {
+
+                accountPanel.hidden = true;
+                mainMenu.hidden = false;
+
+            }
+
+            async function updateAccountDisplay() {
+
+                const account = await window.ECHO_AUTH.getProfile();
+
+                if (account) {
+
+                    authForms.hidden = true;
+                    accountProfile.hidden = false;
+
+                    $("account-username").textContent =
+                        "Username: " + account.username;
+
+                    $("account-email").textContent =
+                        "Email: " + account.email;
+
+                } else {
+
+                    authForms.hidden = false;
+                    accountProfile.hidden = true;
+
+                }
+
+            }
+
+            // Server connection
+
             if (window.ECHO_GAME) {
 
                 window.ECHO_GAME.network.connect();
@@ -154,60 +231,159 @@
 
                 socket.on("connect", () => {
 
-                    statusText.textContent = "SERVER ONLINE";
-
-                    statusIndicator.classList.add("online");
+                    $("server-status").textContent = "SERVER ONLINE";
+                    $("status-indicator").classList.add("online");
 
                 });
 
                 socket.on("disconnect", () => {
 
-                    statusText.textContent = "SERVER OFFLINE";
-
-                    statusIndicator.classList.remove("online");
+                    $("server-status").textContent = "SERVER OFFLINE";
+                    $("status-indicator").classList.remove("online");
 
                 });
 
                 socket.on("connect_error", () => {
 
-                    statusText.textContent = "CONNECTION FAILED";
-
-                    statusIndicator.classList.remove("online");
+                    $("server-status").textContent = "CONNECTION FAILED";
+                    $("status-indicator").classList.remove("online");
 
                 });
 
             } else {
 
-                statusText.textContent = "GAME SYSTEM ERROR";
+                $("server-status").textContent = "GAME SYSTEM ERROR";
 
             }
 
+            // Account button
+
+            $("account-button").addEventListener("click", async () => {
+
+                showAccountPanel();
+                await updateAccountDisplay();
+
+            });
+
+            // Login
+
+            $("login-submit").addEventListener("click", async () => {
+
+                const identifier = $("login-identifier").value.trim();
+                const password = $("login-password").value;
+
+                if (!identifier || !password) {
+                    showNotification("กรุณากรอกข้อมูลให้ครบ");
+                    return;
+                }
+
+                try {
+
+                    await window.ECHO_AUTH.login(identifier, password);
+
+                    await updateAccountDisplay();
+
+                    showNotification("เข้าสู่ระบบสำเร็จ!");
+
+                } catch (error) {
+
+                    showNotification(error.message);
+
+                }
+
+            });
+
+            // Register
+
+            $("register-submit").addEventListener("click", async () => {
+
+                const username = $("register-username").value.trim();
+                const email = $("register-email").value.trim();
+                const password = $("register-password").value;
+
+                if (!username || !email || !password) {
+                    showNotification("กรุณากรอกข้อมูลให้ครบ");
+                    return;
+                }
+
+                try {
+
+                    await window.ECHO_AUTH.register(
+                        username,
+                        email,
+                        password
+                    );
+
+                    showNotification("สมัครสมาชิกสำเร็จ กรุณาเข้าสู่ระบบ");
+
+                    $("login-identifier").value = username;
+                    $("login-password").value = password;
+
+                } catch (error) {
+
+                    showNotification(error.message);
+
+                }
+
+            });
+
+            // Logout
+
+            $("logout-button").addEventListener("click", () => {
+
+                window.ECHO_AUTH.logout();
+
+                updateAccountDisplay();
+
+                showNotification("ออกจากระบบแล้ว");
+
+            });
+
+            // Back
+
+            $("back-menu").addEventListener("click", showMainMenu);
+
             // Start Game
-            startButton.addEventListener("click", () => {
 
-                if (!window.ECHO_GAME?.state.connected) {
+            $("start-game").addEventListener("click", async () => {
 
-                    showNotification("Unable to connect to game server.");
+                const account = await window.ECHO_AUTH.getProfile();
+
+                if (!account) {
+
+                    showNotification("กรุณาเข้าสู่ระบบก่อน");
+
+                    showAccountPanel();
 
                     return;
 
                 }
 
-                showNotification("Game world is being prepared.");
+                showNotification("เตรียมเข้าสู่โลก ECHO ISLES...");
 
             });
 
-            // Character Creator
-            characterButton.addEventListener("click", () => {
+            $("create-character").addEventListener("click", async () => {
 
-                showNotification("Character Creator is coming soon!");
+                const account = await window.ECHO_AUTH.getProfile();
+
+                if (!account) {
+
+                    showNotification("กรุณาเข้าสู่ระบบก่อน");
+
+                    showAccountPanel();
+
+                    return;
+
+                }
+
+                showNotification("ระบบสร้างตัวละครกำลังพัฒนา");
 
             });
 
-            // Settings
-            settingsButton.addEventListener("click", () => {
+            $("settings").addEventListener("click", () => {
 
-                showNotification("Settings are coming soon!");
+                showNotification("Settings coming soon!");
 
             });
 
