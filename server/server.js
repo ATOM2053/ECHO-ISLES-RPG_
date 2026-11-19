@@ -1,7 +1,7 @@
 /* =========================================
    ECHO ISLES RPG
    GAME SERVER
-   Version: 0.3.0
+   Version: 0.4.0
 ========================================= */
 
 "use strict";
@@ -63,7 +63,7 @@ app.get("/api/status", (req, res) => {
     res.json({
         success: true,
         game: "ECHO ISLES RPG",
-        version: "0.3.0",
+        version: "0.4.0",
         status: "online",
         timestamp: new Date().toISOString()
     });
@@ -86,6 +86,26 @@ const io = new Server(server, {
 // ==========================================
 
 const players = new Map();
+
+// ==========================================
+// MOVEMENT CONFIGURATION
+// ==========================================
+
+const MOVEMENT = {
+    minX: 0,
+    minY: 0,
+    maxX: 10000,
+    maxY: 10000,
+
+    maxDistancePerUpdate: 100,
+
+    directions: [
+        "up",
+        "down",
+        "left",
+        "right"
+    ]
+};
 
 // ==========================================
 // SOCKET AUTHENTICATION
@@ -208,12 +228,13 @@ io.on("connection", (socket) => {
                 });
             }
 
-            // ตรวจสอบข้อมูลตำแหน่ง
             const x = Number(character.position_x);
             const y = Number(character.position_y);
 
             const player = {
+
                 id: socket.id,
+
                 characterId: character.id,
                 accountId: socket.account.id,
 
@@ -230,7 +251,11 @@ io.on("connection", (socket) => {
                 x: Number.isFinite(x) ? x : 400,
                 y: Number.isFinite(y) ? y : 300,
 
-                map: character.map_id || "starting_village"
+                map: character.map_id || "starting_village",
+
+                direction: "down",
+                moving: false
+
             };
 
             activePlayer = player;
@@ -239,25 +264,26 @@ io.on("connection", (socket) => {
 
             socket.join(player.map);
 
+            const remotePlayers = Array.from(players.values())
+                .filter(item =>
+                    item.map === player.map &&
+                    item.id !== socket.id
+                );
+
             // ส่งข้อมูลโลกให้ผู้เล่น
+
             respond({
                 success: true,
                 player,
-                players: Array.from(players.values())
-                    .filter(item =>
-                        item.map === player.map &&
-                        item.id !== socket.id
-                    )
+                players: remotePlayers
             });
 
             socket.emit("world:init", {
                 self: player,
-                players: Array.from(players.values())
-                    .filter(item =>
-                        item.map === player.map &&
-                        item.id !== socket.id
-                    )
+                players: remotePlayers
             });
+
+            // แจ้งผู้เล่นอื่นว่ามีผู้เล่นใหม่เข้ามา
 
             socket.to(player.map).emit(
                 "player:joined",
@@ -297,16 +323,34 @@ io.on("connection", (socket) => {
         const x = Number(data.x);
         const y = Number(data.y);
 
+        // ตรวจสอบตำแหน่ง
+
         if (
             !Number.isFinite(x) ||
             !Number.isFinite(y) ||
-            x < 0 ||
-            y < 0 ||
-            x > 10000 ||
-            y > 10000
+            x < MOVEMENT.minX ||
+            y < MOVEMENT.minY ||
+            x > MOVEMENT.maxX ||
+            y > MOVEMENT.maxY
         ) {
             return;
         }
+
+        // ตรวจสอบทิศทาง
+
+        const direction = MOVEMENT.directions.includes(
+            data.direction
+        )
+            ? data.direction
+            : activePlayer.direction;
+
+        // ตรวจสอบสถานะการเดิน
+
+        const moving = typeof data.moving === "boolean"
+            ? data.moving
+            : activePlayer.moving;
+
+        // ตรวจสอบระยะทางที่เคลื่อนที่
 
         const dx = x - activePlayer.x;
         const dy = y - activePlayer.y;
@@ -315,19 +359,30 @@ io.on("connection", (socket) => {
             dx * dx + dy * dy
         );
 
-        if (distance > 100) {
+        if (distance > MOVEMENT.maxDistancePerUpdate) {
             return;
         }
 
+        // อัปเดตข้อมูลผู้เล่น
+
         activePlayer.x = x;
         activePlayer.y = y;
+
+        activePlayer.direction = direction;
+        activePlayer.moving = moving;
+
+        // ส่งข้อมูลไปยังผู้เล่นทั้งหมดในแผนที่เดียวกัน
 
         io.to(activePlayer.map).emit(
             "player:moved",
             {
                 id: socket.id,
-                x,
-                y
+
+                x: activePlayer.x,
+                y: activePlayer.y,
+
+                direction: activePlayer.direction,
+                moving: activePlayer.moving
             }
         );
 
@@ -337,7 +392,7 @@ io.on("connection", (socket) => {
     // PLAYER CHAT
     // ======================================
 
-    socket.on("player:chat", (data) => {
+    function handlePlayerChat(data) {
 
         if (!activePlayer) {
             return;
@@ -369,7 +424,11 @@ io.on("connection", (socket) => {
             }
         );
 
-    });
+    }
+
+    socket.on("player:chat", handlePlayerChat);
+
+    socket.on("chat:send", handlePlayerChat);
 
     // ======================================
     // PLAYER DISCONNECT
