@@ -1,7 +1,7 @@
 /* =========================================
    ECHO ISLES RPG
    CHARACTER CREATOR UI
-   Version: 1.3.0
+   Version: 1.4.0
 ========================================= */
 
 "use strict";
@@ -10,6 +10,7 @@ window.ECHO_CHARACTER_UI = (() => {
 
     let selectedCharacter = null;
     let enteringWorld = false;
+    let loadingCharacters = false;
 
     const $ = id => document.getElementById(id);
 
@@ -23,8 +24,17 @@ window.ECHO_CHARACTER_UI = (() => {
         "Priest"
     ];
 
+    const RACES = [
+        "Human",
+        "Elf",
+        "Dark Elf",
+        "Dwarf",
+        "Beastkin",
+        "Dragonkin"
+    ];
+
     /* =====================================
-       MESSAGE
+       UTILITIES
     ===================================== */
 
     function showMessage(message) {
@@ -34,6 +44,39 @@ window.ECHO_CHARACTER_UI = (() => {
         if (element) {
             element.textContent = message;
         }
+
+    }
+
+    function createElement(tag, className, text) {
+
+        const element = document.createElement(tag);
+
+        if (className) {
+            element.className = className;
+        }
+
+        if (text !== undefined) {
+            element.textContent = text;
+        }
+
+        return element;
+
+    }
+
+    function getRaceClass(race) {
+
+        return String(race || "human")
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, "-");
+
+    }
+
+    function getInitial(name) {
+
+        return String(name || "?")
+            .trim()
+            .charAt(0)
+            .toUpperCase();
 
     }
 
@@ -47,11 +90,14 @@ window.ECHO_CHARACTER_UI = (() => {
 
         if (button) return button;
 
-        button = document.createElement("button");
+        button = createElement(
+            "button",
+            "character-action character-enter-button",
+            "ENTER WORLD"
+        );
 
         button.id = "character-enter-world";
-        button.className = "character-action";
-        button.textContent = "ENTER WORLD";
+        button.type = "button";
         button.disabled = true;
 
         button.addEventListener("click", enterWorld);
@@ -66,67 +112,143 @@ window.ECHO_CHARACTER_UI = (() => {
 
     }
 
+    function updateEnterButton() {
+
+        const button = createEnterButton();
+
+        if (!button) return;
+
+        button.disabled = !selectedCharacter || enteringWorld;
+
+        button.textContent = enteringWorld
+            ? "CONNECTING..."
+            : "ENTER WORLD";
+
+    }
+
     /* =====================================
        CHARACTER CARD
     ===================================== */
 
     function createCard(character) {
 
-        const card = document.createElement("div");
+        const card = createElement(
+            "article",
+            "character-card"
+        );
 
-        card.className = "character-card";
+        card.dataset.characterId = character.id;
 
-        const name = document.createElement("h3");
-        name.textContent = character.name;
+        /* AVATAR */
 
-        const race = document.createElement("p");
-        race.textContent = "Race: " + character.race;
+        const avatar = createElement(
+            "div",
+            "character-avatar " + getRaceClass(character.race)
+        );
 
-        const gender = document.createElement("p");
-        gender.textContent = "Gender: " + character.gender;
+        const initial = createElement(
+            "span",
+            "character-avatar-initial",
+            getInitial(character.name)
+        );
 
-        const level = document.createElement("p");
-        level.textContent = "Level: " + character.level;
+        avatar.appendChild(initial);
 
-        const job = document.createElement("p");
-        job.textContent = "Class: " + (character.job || "Adventurer");
+        /* INFORMATION */
 
-        const select = document.createElement("button");
+        const info = createElement(
+            "div",
+            "character-info"
+        );
 
-        select.className = "character-action";
-        select.textContent = "SELECT";
+        const name = createElement(
+            "h3",
+            "character-name",
+            character.name
+        );
+
+        const level = createElement(
+            "p",
+            "character-level",
+            "LEVEL " + (character.level || 1)
+        );
+
+        const race = createElement(
+            "p",
+            "character-race",
+            character.race
+        );
+
+        const job = createElement(
+            "p",
+            "character-job",
+            character.job || "Adventurer"
+        );
+
+        const gender = createElement(
+            "p",
+            "character-gender",
+            character.gender
+        );
+
+        info.append(
+            name,
+            level,
+            race,
+            job,
+            gender
+        );
+
+        /* SELECT BUTTON */
+
+        const select = createElement(
+            "button",
+            "character-action character-select-button",
+            "SELECT CHARACTER"
+        );
+
+        select.type = "button";
 
         select.addEventListener("click", () => {
 
-            selectedCharacter = character;
-
-            document.querySelectorAll(".character-card")
-                .forEach(item => {
-                    item.classList.remove("selected");
-                });
-
-            card.classList.add("selected");
-
-            const enterButton = createEnterButton();
-
-            enterButton.disabled = false;
-
-            showMessage(
-                "Selected character: " + character.name
-            );
+            selectCharacter(character, card);
 
         });
 
         card.append(
-            name,
-            race,
-            gender,
-            level,
-            job,
+            avatar,
+            info,
             select
         );
 
         return card;
+
+    }
+
+    /* =====================================
+       SELECT CHARACTER
+    ===================================== */
+
+    function selectCharacter(character, card) {
+
+        selectedCharacter = character;
+
+        document.querySelectorAll(".character-card")
+            .forEach(item => {
+
+                item.classList.remove("selected");
+
+            });
+
+        if (card) {
+            card.classList.add("selected");
+        }
+
+        updateEnterButton();
+
+        showMessage(
+            "Selected character: " + character.name
+        );
 
     }
 
@@ -138,31 +260,58 @@ window.ECHO_CHARACTER_UI = (() => {
 
         const list = $("character-list");
 
-        if (!list) return;
+        if (!list || loadingCharacters) return;
+
+        loadingCharacters = true;
 
         list.replaceChildren();
 
         selectedCharacter = null;
 
-        const enterButton = createEnterButton();
-
-        enterButton.disabled = true;
+        updateEnterButton();
 
         showMessage("Loading characters...");
 
         try {
 
+            if (!window.ECHO_CHARACTERS) {
+                throw new Error(
+                    "Character service is unavailable."
+                );
+            }
+
             const characters =
                 await window.ECHO_CHARACTERS.getAll();
 
-            if (!characters.length) {
+            if (!Array.isArray(characters)) {
+                throw new Error(
+                    "Invalid character response."
+                );
+            }
 
-                const empty = document.createElement("div");
+            if (characters.length === 0) {
 
-                empty.className = "character-empty";
+                const empty = createElement(
+                    "div",
+                    "character-empty"
+                );
 
-                empty.textContent =
-                    "No characters found. Create your first character!";
+                const title = createElement(
+                    "h3",
+                    "",
+                    "YOUR JOURNEY BEGINS HERE"
+                );
+
+                const description = createElement(
+                    "p",
+                    "",
+                    "You don't have any characters yet."
+                );
+
+                empty.append(
+                    title,
+                    description
+                );
 
                 list.appendChild(empty);
 
@@ -174,7 +323,9 @@ window.ECHO_CHARACTER_UI = (() => {
 
             characters.forEach(character => {
 
-                list.appendChild(createCard(character));
+                list.appendChild(
+                    createCard(character)
+                );
 
             });
 
@@ -184,7 +335,13 @@ window.ECHO_CHARACTER_UI = (() => {
 
         } catch (error) {
 
-            showMessage(error.message);
+            showMessage(
+                error.message || "Unable to load characters."
+            );
+
+        } finally {
+
+            loadingCharacters = false;
 
         }
 
@@ -198,11 +355,25 @@ window.ECHO_CHARACTER_UI = (() => {
 
         event.preventDefault();
 
-        const name = $("character-name").value.trim();
-        const race = $("character-race").value;
-        const gender = $("character-gender").value;
+        if (loadingCharacters || enteringWorld) return;
 
+        const nameElement = $("character-name");
+        const raceElement = $("character-race");
+        const genderElement = $("character-gender");
         const jobElement = $("character-job");
+
+        if (
+            !nameElement ||
+            !raceElement ||
+            !genderElement
+        ) {
+            showMessage("Character form is incomplete.");
+            return;
+        }
+
+        const name = nameElement.value.trim();
+        const race = raceElement.value;
+        const gender = genderElement.value;
 
         const job = jobElement
             ? jobElement.value
@@ -210,7 +381,17 @@ window.ECHO_CHARACTER_UI = (() => {
 
         if (!name || !race || !gender || !job) {
 
-            showMessage("Please complete all fields.");
+            showMessage(
+                "Please complete all character fields."
+            );
+
+            return;
+
+        }
+
+        if (!RACES.includes(race)) {
+
+            showMessage("Invalid character race.");
 
             return;
 
@@ -218,7 +399,7 @@ window.ECHO_CHARACTER_UI = (() => {
 
         if (!JOBS.includes(job)) {
 
-            showMessage("Invalid character job.");
+            showMessage("Invalid character class.");
 
             return;
 
@@ -230,6 +411,8 @@ window.ECHO_CHARACTER_UI = (() => {
 
         button.disabled = true;
 
+        showMessage("Creating character...");
+
         try {
 
             await window.ECHO_CHARACTERS.create({
@@ -239,19 +422,23 @@ window.ECHO_CHARACTER_UI = (() => {
                 job
             });
 
-            $("character-name").value = "";
+            nameElement.value = "";
 
             if (jobElement) {
                 jobElement.value = "Adventurer";
             }
 
-            showMessage("Character created successfully!");
+            showMessage(
+                "Character created successfully!"
+            );
 
             await loadCharacters();
 
         } catch (error) {
 
-            showMessage(error.message);
+            showMessage(
+                error.message || "Unable to create character."
+            );
 
         } finally {
 
@@ -271,7 +458,9 @@ window.ECHO_CHARACTER_UI = (() => {
 
         if (!selectedCharacter) {
 
-            showMessage("Please select a character first.");
+            showMessage(
+                "Please select a character first."
+            );
 
             return;
 
@@ -279,36 +468,42 @@ window.ECHO_CHARACTER_UI = (() => {
 
         if (!window.ECHO_GAME) {
 
-            showMessage("Game controller is unavailable.");
+            showMessage(
+                "Game controller is unavailable."
+            );
 
             return;
 
         }
 
-        const button = $("character-enter-world");
-
         enteringWorld = true;
 
-        if (button) {
-            button.disabled = true;
-            button.textContent = "CONNECTING...";
-        }
+        updateEnterButton();
 
-        showMessage("Connecting to game server...");
+        showMessage(
+            "Connecting to game server..."
+        );
 
         try {
 
-            const result = await window.ECHO_GAME.enterWorld(
-                selectedCharacter.id
-            );
+            const result =
+                await window.ECHO_GAME.enterWorld(
+                    selectedCharacter.id
+                );
 
             if (!result || !result.success) {
-                throw new Error("Server did not confirm world entry.");
+
+                throw new Error(
+                    "Server did not confirm world entry."
+                );
+
             }
 
-            showMessage("Entering game world...");
+            const panel = $("character-panel");
 
-            $("character-panel").hidden = true;
+            if (panel) {
+                panel.hidden = true;
+            }
 
             document.dispatchEvent(
                 new CustomEvent("echo:world-entered", {
@@ -319,20 +514,20 @@ window.ECHO_CHARACTER_UI = (() => {
                 })
             );
 
+            showMessage("Entering game world...");
+
         } catch (error) {
 
             showMessage(
-                "Unable to enter world: " + error.message
+                "Unable to enter world: " +
+                (error.message || "Unknown error")
             );
 
         } finally {
 
             enteringWorld = false;
 
-            if (button) {
-                button.disabled = !selectedCharacter;
-                button.textContent = "ENTER WORLD";
-            }
+            updateEnterButton();
 
         }
 
@@ -344,11 +539,21 @@ window.ECHO_CHARACTER_UI = (() => {
 
     function open() {
 
-        $("main-menu").hidden = true;
+        const mainMenu = $("main-menu");
+        const accountPanel = $("account-panel");
+        const characterPanel = $("character-panel");
 
-        $("account-panel").hidden = true;
+        if (mainMenu) {
+            mainMenu.hidden = true;
+        }
 
-        $("character-panel").hidden = false;
+        if (accountPanel) {
+            accountPanel.hidden = true;
+        }
+
+        if (characterPanel) {
+            characterPanel.hidden = false;
+        }
 
         loadCharacters();
 
@@ -356,9 +561,20 @@ window.ECHO_CHARACTER_UI = (() => {
 
     function close() {
 
-        $("character-panel").hidden = true;
+        const characterPanel = $("character-panel");
+        const mainMenu = $("main-menu");
 
-        $("main-menu").hidden = false;
+        if (characterPanel) {
+            characterPanel.hidden = true;
+        }
+
+        if (mainMenu) {
+            mainMenu.hidden = false;
+        }
+
+        selectedCharacter = null;
+
+        updateEnterButton();
 
     }
 
@@ -371,13 +587,23 @@ window.ECHO_CHARACTER_UI = (() => {
         const form = $("character-form");
 
         if (form) {
-            form.addEventListener("submit", createCharacter);
+
+            form.addEventListener(
+                "submit",
+                createCharacter
+            );
+
         }
 
         const back = $("character-back");
 
         if (back) {
-            back.addEventListener("click", close);
+
+            back.addEventListener(
+                "click",
+                close
+            );
+
         }
 
         createEnterButton();
@@ -404,7 +630,8 @@ window.ECHO_CHARACTER_UI = (() => {
             return selectedCharacter;
         },
 
-        jobs: JOBS
+        jobs: JOBS,
+        races: RACES
 
     };
 
