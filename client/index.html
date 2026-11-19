@@ -14,658 +14,594 @@
     <link rel="stylesheet" href="css/world.css">
 
     <style>
-    /* =========================================
-       ECHO ISLES RPG
-       MAIN MENU DESIGN
-       Version: 2.0.0
-    ========================================= */
+        [hidden] {
+            display: none !important;
+        }
 
-    [hidden] {
-        display: none !important;
-    }
+        :root {
+            --menu-gold: #d8b77a;
+            --menu-gold-light: #f4dfaa;
+            --menu-dark: #080d18;
+            --menu-panel: rgba(12, 19, 32, .92);
+            --menu-border: rgba(216, 183, 122, .32);
+            --menu-text: #e9e4d8;
+            --menu-muted: #999da9;
+        }
 
-    :root {
-        --menu-gold: #d8b77a;
-        --menu-gold-light: #f4dfaa;
-        --menu-dark: #080d18;
-        --menu-panel: rgba(12, 19, 32, .92);
-        --menu-border: rgba(216, 183, 122, .32);
-        --menu-text: #e9e4d8;
-        --menu-muted: #999da9;
-    }
+        body {
+            margin: 0;
+            min-height: 100vh;
+            background: var(--menu-dark);
+            color: var(--menu-text);
+            font-family: Georgia, "Times New Roman", serif;
+        }
 
-    body {
-        margin: 0;
-        min-height: 100vh;
-        background: var(--menu-dark);
-        color: var(--menu-text);
-        font-family: Georgia, "Times New Roman", serif;
-    }
+        button,
+        input,
+        select {
+            font: inherit;
+        }
 
-    button,
-    input,
-    select {
-        font: inherit;
-    }
+        button {
+            cursor: pointer;
+        }
 
-    button {
-        cursor: pointer;
-    }
+        /* MAIN MENU */
 
-    /* =========================================
-       MAIN MENU
-    ========================================= */
+        #main-menu {
+            position: relative;
+            isolation: isolate;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            min-height: 100svh;
+            overflow: hidden;
+            padding: 28px clamp(20px, 5vw, 76px);
+            box-sizing: border-box;
+            background:
+                linear-gradient(
+                    90deg,
+                    rgba(5, 9, 18, .96) 0%,
+                    rgba(5, 9, 18, .78) 38%,
+                    rgba(5, 9, 18, .12) 100%
+                ),
+                linear-gradient(
+                    0deg,
+                    rgba(5, 9, 18, .95),
+                    transparent 45%,
+                    rgba(5, 9, 18, .28)
+                ),
+                radial-gradient(
+                    ellipse at 72% 35%,
+                    #354967 0%,
+                    #18273c 34%,
+                    #0b1322 72%,
+                    #070b13 100%
+                );
+        }
 
-    #main-menu {
-        position: relative;
-        isolation: isolate;
-        display: flex;
-        flex-direction: column;
-        justify-content: space-between;
-        min-height: 100svh;
-        overflow: hidden;
-        padding: 28px clamp(20px, 5vw, 76px);
-        box-sizing: border-box;
-        background:
-            linear-gradient(
-                90deg,
-                rgba(5, 9, 18, .96) 0%,
-                rgba(5, 9, 18, .78) 38%,
-                rgba(5, 9, 18, .12) 100%
-            ),
-            linear-gradient(
-                0deg,
-                rgba(5, 9, 18, .95),
-                transparent 45%,
-                rgba(5, 9, 18, .28)
-            ),
-            radial-gradient(
-                ellipse at 72% 35%,
-                #354967 0%,
-                #18273c 34%,
-                #0b1322 72%,
-                #070b13 100%
+        #main-menu::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            z-index: -1;
+            pointer-events: none;
+            opacity: .7;
+            background-image:
+                radial-gradient(2px 2px at 12% 18%, #fff, transparent),
+                radial-gradient(1px 1px at 25% 32%, #fff, transparent),
+                radial-gradient(2px 2px at 44% 12%, #e6d8b6, transparent),
+                radial-gradient(1px 1px at 62% 22%, #fff, transparent),
+                radial-gradient(2px 2px at 82% 14%, #fff, transparent),
+                radial-gradient(1px 1px at 91% 38%, #fff, transparent),
+                radial-gradient(1px 1px at 72% 53%, #fff, transparent),
+                radial-gradient(2px 2px at 35% 57%, #e6d8b6, transparent);
+            background-size: 380px 280px;
+        }
+
+        #main-menu::after {
+            content: "";
+            position: absolute;
+            z-index: -1;
+            top: 9%;
+            right: 13%;
+            width: clamp(110px, 17vw, 230px);
+            aspect-ratio: 1;
+            border-radius: 50%;
+            background: #e6dfc9;
+            box-shadow:
+                0 0 35px rgba(226, 220, 194, .35),
+                0 0 110px rgba(174, 195, 224, .22),
+                0 0 190px rgba(174, 195, 224, .12);
+            opacity: .8;
+        }
+
+        .menu-topbar {
+            position: relative;
+            z-index: 2;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 20px;
+        }
+
+        .menu-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: var(--menu-gold-light);
+            letter-spacing: 4px;
+            font-size: 12px;
+        }
+
+        .menu-brand-symbol {
+            display: grid;
+            place-items: center;
+            width: 34px;
+            height: 34px;
+            border: 1px solid var(--menu-border);
+            transform: rotate(45deg);
+            color: var(--menu-gold);
+            font-size: 18px;
+        }
+
+        .menu-brand-symbol span {
+            transform: rotate(-45deg);
+        }
+
+        .menu-version {
+            color: rgba(232, 224, 205, .55);
+            font-family: Arial, sans-serif;
+            font-size: 10px;
+            letter-spacing: 2px;
+        }
+
+        .menu-skyline {
+            position: absolute;
+            z-index: -1;
+            right: 2%;
+            bottom: 12%;
+            width: min(66vw, 850px);
+            height: min(52vw, 510px);
+            pointer-events: none;
+            opacity: .9;
+        }
+
+        .skyline-island {
+            position: absolute;
+            left: 10%;
+            right: 0;
+            bottom: 12%;
+            height: 42%;
+            background:
+                linear-gradient(180deg, #26364a, #111d2d 70%, #080e18);
+            clip-path: polygon(
+                0 20%, 12% 12%, 25% 18%, 37% 0,
+                52% 13%, 65% 5%, 78% 19%, 100% 10%,
+                91% 57%, 77% 70%, 66% 100%, 43% 79%,
+                28% 100%, 17% 65%, 5% 56%
             );
-    }
+            filter: drop-shadow(0 0 30px rgba(118, 153, 190, .15));
+        }
 
-    /* Stars */
+        .skyline-castle {
+            position: absolute;
+            left: 39%;
+            bottom: 43%;
+            width: 28%;
+            height: 42%;
+            background: linear-gradient(90deg, #172438, #34445a, #172438);
+            clip-path: polygon(
+                0 100%, 0 35%, 12% 35%, 12% 14%,
+                20% 14%, 20% 35%, 36% 35%, 36% 0,
+                46% 0, 46% 35%, 61% 35%, 61% 15%,
+                70% 15%, 70% 35%, 100% 35%, 100% 100%
+            );
+        }
 
-    #main-menu::before {
-        content: "";
-        position: absolute;
-        inset: 0;
-        z-index: -1;
-        pointer-events: none;
-        opacity: .7;
-        background-image:
-            radial-gradient(2px 2px at 12% 18%, #fff, transparent),
-            radial-gradient(1px 1px at 25% 32%, #fff, transparent),
-            radial-gradient(2px 2px at 44% 12%, #e6d8b6, transparent),
-            radial-gradient(1px 1px at 62% 22%, #fff, transparent),
-            radial-gradient(2px 2px at 82% 14%, #fff, transparent),
-            radial-gradient(1px 1px at 91% 38%, #fff, transparent),
-            radial-gradient(1px 1px at 72% 53%, #fff, transparent),
-            radial-gradient(2px 2px at 35% 57%, #e6d8b6, transparent);
-        background-size: 380px 280px;
-    }
+        .skyline-tower {
+            position: absolute;
+            bottom: 76%;
+            left: 51%;
+            width: 4%;
+            height: 22%;
+            background: #43536a;
+            clip-path: polygon(50% 0, 100% 35%, 85% 100%, 15% 100%, 0 35%);
+        }
 
-    /* Moonlight */
+        .skyline-glow {
+            position: absolute;
+            left: 20%;
+            bottom: 22%;
+            width: 65%;
+            height: 35%;
+            background: rgba(92, 133, 170, .13);
+            filter: blur(35px);
+        }
 
-    #main-menu::after {
-        content: "";
-        position: absolute;
-        z-index: -1;
-        top: 9%;
-        right: 13%;
-        width: clamp(110px, 17vw, 230px);
-        aspect-ratio: 1;
-        border-radius: 50%;
-        background: #e6dfc9;
-        box-shadow:
-            0 0 35px rgba(226, 220, 194, .35),
-            0 0 110px rgba(174, 195, 224, .22),
-            0 0 190px rgba(174, 195, 224, .12);
-        opacity: .8;
-    }
+        .menu-main-content {
+            position: relative;
+            z-index: 2;
+            width: min(100%, 540px);
+            margin-top: auto;
+            margin-bottom: auto;
+            padding: 65px 0 55px;
+        }
 
-    .menu-topbar {
-        position: relative;
-        z-index: 2;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 20px;
-    }
+        .menu-eyebrow {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+            color: var(--menu-gold);
+            font-family: Arial, sans-serif;
+            font-size: 10px;
+            font-weight: bold;
+            letter-spacing: 5px;
+        }
 
-    .menu-brand {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        color: var(--menu-gold-light);
-        letter-spacing: 4px;
-        font-size: 12px;
-    }
+        .menu-eyebrow::before {
+            content: "";
+            width: 35px;
+            height: 1px;
+            background: var(--menu-gold);
+        }
 
-    .menu-brand-symbol {
-        display: grid;
-        place-items: center;
-        width: 34px;
-        height: 34px;
-        border: 1px solid var(--menu-border);
-        transform: rotate(45deg);
-        color: var(--menu-gold);
-        font-size: 18px;
-    }
+        .menu-title {
+            margin: 0;
+            color: #f2e8cf;
+            font-size: clamp(48px, 8vw, 94px);
+            font-weight: normal;
+            line-height: .95;
+            letter-spacing: 5px;
+            text-shadow:
+                0 3px 0 #7d6846,
+                0 8px 30px rgba(0, 0, 0, .65);
+        }
 
-    .menu-brand-symbol span {
-        transform: rotate(-45deg);
-    }
+        .menu-title span {
+            display: block;
+            color: var(--menu-gold-light);
+            font-size: .42em;
+            letter-spacing: 12px;
+            margin-top: 16px;
+        }
 
-    .menu-version {
-        color: rgba(232, 224, 205, .55);
-        font-family: Arial, sans-serif;
-        font-size: 10px;
-        letter-spacing: 2px;
-    }
+        .menu-subtitle {
+            margin: 27px 0 12px;
+            color: #d3c9b4;
+            font-size: 15px;
+            letter-spacing: 3px;
+        }
 
-    /* Floating island silhouette */
+        .menu-description {
+            max-width: 390px;
+            color: rgba(226, 225, 219, .65);
+            font-family: Arial, sans-serif;
+            font-size: 12px;
+            line-height: 1.9;
+        }
 
-    .menu-skyline {
-        position: absolute;
-        z-index: -1;
-        right: 2%;
-        bottom: 12%;
-        width: min(66vw, 850px);
-        height: min(52vw, 510px);
-        pointer-events: none;
-        opacity: .9;
-    }
+        .menu-divider {
+            width: 220px;
+            height: 1px;
+            margin: 27px 0;
+            background: linear-gradient(90deg, var(--menu-gold), transparent);
+        }
 
-    .skyline-island {
-        position: absolute;
-        left: 10%;
-        right: 0;
-        bottom: 12%;
-        height: 42%;
-        background:
-            linear-gradient(180deg, #26364a, #111d2d 70%, #080e18);
-        clip-path: polygon(
-            0 20%, 12% 12%, 25% 18%, 37% 0,
-            52% 13%, 65% 5%, 78% 19%, 100% 10%,
-            91% 57%, 77% 70%, 66% 100%, 43% 79%,
-            28% 100%, 17% 65%, 5% 56%
-        );
-        filter: drop-shadow(0 0 30px rgba(118, 153, 190, .15));
-    }
+        .menu-actions {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 10px;
+            width: min(100%, 310px);
+        }
 
-    .skyline-castle {
-        position: absolute;
-        left: 39%;
-        bottom: 43%;
-        width: 28%;
-        height: 42%;
-        background: linear-gradient(90deg, #172438, #34445a, #172438);
-        clip-path: polygon(
-            0 100%, 0 35%, 12% 35%, 12% 14%,
-            20% 14%, 20% 35%, 36% 35%, 36% 0,
-            46% 0, 46% 35%, 61% 35%, 61% 15%,
-            70% 15%, 70% 35%, 100% 35%, 100% 100%
-        );
-        border-top: 1px solid rgba(232, 210, 158, .2);
-    }
-
-    .skyline-tower {
-        position: absolute;
-        bottom: 76%;
-        left: 51%;
-        width: 4%;
-        height: 22%;
-        background: #43536a;
-        clip-path: polygon(50% 0, 100% 35%, 85% 100%, 15% 100%, 0 35%);
-    }
-
-    .skyline-glow {
-        position: absolute;
-        left: 20%;
-        bottom: 22%;
-        width: 65%;
-        height: 35%;
-        background: rgba(92, 133, 170, .13);
-        filter: blur(35px);
-    }
-
-    /* Main content */
-
-    .menu-main-content {
-        position: relative;
-        z-index: 2;
-        width: min(100%, 540px);
-        margin-top: auto;
-        margin-bottom: auto;
-        padding: 65px 0 55px;
-    }
-
-    .menu-eyebrow {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        margin-bottom: 20px;
-        color: var(--menu-gold);
-        font-family: Arial, sans-serif;
-        font-size: 10px;
-        font-weight: bold;
-        letter-spacing: 5px;
-    }
-
-    .menu-eyebrow::before {
-        content: "";
-        width: 35px;
-        height: 1px;
-        background: var(--menu-gold);
-    }
-
-    .menu-title {
-        margin: 0;
-        color: #f2e8cf;
-        font-size: clamp(48px, 8vw, 94px);
-        font-weight: normal;
-        line-height: .95;
-        letter-spacing: 5px;
-        text-shadow:
-            0 3px 0 #7d6846,
-            0 8px 30px rgba(0, 0, 0, .65);
-    }
-
-    .menu-title span {
-        display: block;
-        color: var(--menu-gold-light);
-        font-size: .42em;
-        letter-spacing: 12px;
-        margin-top: 16px;
-    }
-
-    .menu-subtitle {
-        margin: 27px 0 12px;
-        color: #d3c9b4;
-        font-size: 15px;
-        letter-spacing: 3px;
-    }
-
-    .menu-description {
-        max-width: 390px;
-        color: rgba(226, 225, 219, .65);
-        font-family: Arial, sans-serif;
-        font-size: 12px;
-        line-height: 1.9;
-    }
-
-    .menu-divider {
-        width: 220px;
-        height: 1px;
-        margin: 27px 0;
-        background: linear-gradient(
-            90deg,
-            var(--menu-gold),
-            transparent
-        );
-    }
-
-    /* Menu buttons */
-
-    .menu-actions {
-        display: flex;
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 10px;
-        width: min(100%, 310px);
-    }
-
-    .menu-action {
-        position: relative;
-        display: flex;
-        align-items: center;
-        width: 100%;
-        min-height: 48px;
-        padding: 0 20px;
-        box-sizing: border-box;
-        border: 1px solid rgba(216, 183, 122, .25);
-        background:
-            linear-gradient(
+        .menu-action {
+            position: relative;
+            display: flex;
+            align-items: center;
+            width: 100%;
+            min-height: 48px;
+            padding: 0 20px;
+            box-sizing: border-box;
+            border: 1px solid rgba(216, 183, 122, .25);
+            background: linear-gradient(
                 90deg,
                 rgba(28, 39, 55, .96),
                 rgba(13, 21, 34, .82)
             );
-        color: #e9dfc9;
-        text-align: left;
-        font-family: Arial, sans-serif;
-        font-size: 11px;
-        font-weight: bold;
-        letter-spacing: 3px;
-        transition:
-            .2s ease,
-            border-color .2s ease,
-            transform .2s ease;
-    }
+            color: #e9dfc9;
+            text-align: left;
+            font-family: Arial, sans-serif;
+            font-size: 11px;
+            font-weight: bold;
+            letter-spacing: 3px;
+            transition: .2s ease;
+        }
 
-    .menu-action::before {
-        content: "›";
-        margin-right: 14px;
-        color: var(--menu-gold);
-        font-size: 22px;
-    }
+        .menu-action::before {
+            content: "›";
+            margin-right: 14px;
+            color: var(--menu-gold);
+            font-size: 22px;
+        }
 
-    .menu-action:hover {
-        transform: translateX(6px);
-        border-color: var(--menu-gold);
-        background: linear-gradient(
-            90deg,
-            rgba(80, 66, 45, .9),
-            rgba(22, 31, 44, .95)
-        );
-        color: #fff2d1;
-    }
+        .menu-action:hover {
+            transform: translateX(6px);
+            border-color: var(--menu-gold);
+            color: #fff2d1;
+        }
 
-    .menu-action-primary {
-        min-height: 56px;
-        border-color: rgba(231, 196, 125, .8);
-        background: linear-gradient(
-            100deg,
-            #927342,
-            #4e432f 65%,
-            #263043
-        );
-        color: #fff1cf;
-        box-shadow: 0 5px 25px rgba(0, 0, 0, .3);
-    }
+        .menu-action-primary {
+            min-height: 56px;
+            border-color: rgba(231, 196, 125, .8);
+            background: linear-gradient(
+                100deg,
+                #927342,
+                #4e432f 65%,
+                #263043
+            );
+            color: #fff1cf;
+        }
 
-    .menu-action-primary::before {
-        color: #fff0c4;
-    }
+        .menu-action-primary::before {
+            color: #fff0c4;
+        }
 
-    .menu-action-primary:hover {
-        background: linear-gradient(
-            100deg,
-            #b18d50,
-            #655337 65%,
-            #35445a
-        );
-    }
+        .menu-bottom {
+            position: relative;
+            z-index: 2;
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-between;
+            gap: 20px;
+            padding-top: 18px;
+            border-top: 1px solid rgba(216, 183, 122, .2);
+            font-family: Arial, sans-serif;
+        }
 
-    /* Bottom information */
+        .menu-world-info {
+            color: rgba(220, 218, 209, .6);
+            font-size: 9px;
+            letter-spacing: 2px;
+            line-height: 1.8;
+        }
 
-    .menu-bottom {
-        position: relative;
-        z-index: 2;
-        display: flex;
-        align-items: flex-end;
-        justify-content: space-between;
-        gap: 20px;
-        padding-top: 18px;
-        border-top: 1px solid rgba(216, 183, 122, .2);
-        font-family: Arial, sans-serif;
-    }
+        .menu-world-info strong {
+            display: block;
+            color: var(--menu-gold);
+            font-size: 10px;
+            font-weight: normal;
+        }
 
-    .menu-world-info {
-        color: rgba(220, 218, 209, .6);
-        font-size: 9px;
-        letter-spacing: 2px;
-        line-height: 1.8;
-    }
+        .menu-copyright {
+            color: rgba(220, 218, 209, .35);
+            font-size: 9px;
+            letter-spacing: 1px;
+            text-align: right;
+        }
 
-    .menu-world-info strong {
-        display: block;
-        color: var(--menu-gold);
-        font-size: 10px;
-        font-weight: normal;
-    }
+        /* ACCOUNT / CHARACTER */
 
-    .menu-copyright {
-        color: rgba(220, 218, 209, .35);
-        font-size: 9px;
-        letter-spacing: 1px;
-        text-align: right;
-    }
-
-    /* =========================================
-       ACCOUNT / CHARACTER PANEL
-    ========================================= */
-
-    #account-panel,
-    #character-panel {
-        min-height: 100svh;
-        box-sizing: border-box;
-        padding: 30px 20px;
-        background:
-            radial-gradient(
+        #account-panel,
+        #character-panel {
+            min-height: 100svh;
+            box-sizing: border-box;
+            padding: 30px 20px;
+            background: radial-gradient(
                 ellipse at top,
                 #26374c,
                 #101a2a 50%,
                 #080d18
             );
-    }
-
-    #account-panel > h2,
-    #character-panel > h2 {
-        color: var(--menu-gold-light);
-        text-align: center;
-        letter-spacing: 5px;
-    }
-
-    #account-forms {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 20px;
-        max-width: 850px;
-        margin: 35px auto;
-    }
-
-    #login-form,
-    #register-form,
-    #account-profile,
-    #character-form {
-        padding: 24px;
-        border: 1px solid var(--menu-border);
-        background: var(--menu-panel);
-        box-shadow: 0 15px 45px rgba(0, 0, 0, .25);
-    }
-
-    #login-form h3,
-    #register-form h3,
-    #account-profile h3 {
-        color: var(--menu-gold);
-        letter-spacing: 3px;
-    }
-
-    #account-panel input,
-    #character-panel input,
-    #character-panel select {
-        display: block;
-        width: 100%;
-        min-height: 44px;
-        margin: 12px 0;
-        padding: 0 12px;
-        box-sizing: border-box;
-        border: 1px solid rgba(216, 183, 122, .25);
-        background: #0b1320;
-        color: #f0eadb;
-    }
-
-    #account-panel button,
-    #character-panel button {
-        min-height: 42px;
-        padding: 0 18px;
-        border: 1px solid var(--menu-border);
-        background: #665438;
-        color: #fff0d0;
-    }
-
-    #account-message,
-    #character-message {
-        text-align: center;
-        color: var(--menu-gold-light);
-    }
-
-    #account-back,
-    #character-back {
-        display: block;
-        margin: 20px auto;
-    }
-
-    #character-list {
-        max-width: 850px;
-        margin: 20px auto;
-    }
-
-    #character-form {
-        max-width: 500px;
-        margin: 20px auto;
-    }
-
-    /* =========================================
-       SERVER STATUS
-    ========================================= */
-
-    #server-status {
-        position: fixed;
-        z-index: 100;
-        right: 12px;
-        bottom: 12px;
-        padding: 8px 12px;
-        border: 1px solid rgba(216, 183, 122, .2);
-        background: rgba(7, 12, 21, .9);
-        color: #b6c6b2;
-        font-family: Arial, sans-serif;
-        font-size: 10px;
-        letter-spacing: 1px;
-    }
-
-    /* =========================================
-       RESPONSIVE
-    ========================================= */
-
-    @media (max-width: 700px) {
-
-        #main-menu {
-            min-height: 100svh;
-            padding: 20px;
-            background:
-                linear-gradient(
-                    90deg,
-                    rgba(5, 9, 18, .94),
-                    rgba(5, 9, 18, .65)
-                ),
-                linear-gradient(
-                    0deg,
-                    rgba(5, 9, 18, .98),
-                    transparent 70%
-                ),
-                radial-gradient(
-                    ellipse at 75% 30%,
-                    #354967,
-                    #101a2a 70%
-                );
         }
 
-        #main-menu::after {
-            top: 12%;
-            right: 9%;
-            width: 105px;
-        }
-
-        .menu-skyline {
-            right: -22%;
-            bottom: 19%;
-            width: 110%;
-            height: 40%;
-            opacity: .58;
-        }
-
-        .menu-main-content {
-            padding: 55px 0 45px;
-        }
-
-        .menu-title {
-            font-size: clamp(46px, 13vw, 70px);
-        }
-
-        .menu-title span {
-            letter-spacing: 8px;
-        }
-
-        .menu-description {
-            max-width: 310px;
-            font-size: 11px;
-        }
-
-        .menu-actions {
-            width: 100%;
-            max-width: 340px;
-        }
-
-        .menu-action {
-            min-height: 48px;
-        }
-
-        .menu-bottom {
-            align-items: flex-start;
-        }
-
-        .menu-copyright {
-            max-width: 130px;
-            line-height: 1.7;
+        #account-panel > h2,
+        #character-panel > h2 {
+            color: var(--menu-gold-light);
+            text-align: center;
+            letter-spacing: 5px;
         }
 
         #account-forms {
-            grid-template-columns: 1fr;
-        }
-    }
-
-    @media (max-width: 380px) {
-
-        #main-menu {
-            padding: 15px;
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 20px;
+            max-width: 850px;
+            margin: 35px auto;
         }
 
-        .menu-version {
-            font-size: 8px;
+        #login-form,
+        #register-form,
+        #account-profile,
+        #character-form {
+            padding: 24px;
+            border: 1px solid var(--menu-border);
+            background: var(--menu-panel);
+            box-shadow: 0 15px 45px rgba(0, 0, 0, .25);
         }
 
-        .menu-title {
-            font-size: 43px;
-        }
-
-        .menu-eyebrow {
-            font-size: 9px;
+        #login-form h3,
+        #register-form h3,
+        #account-profile h3 {
+            color: var(--menu-gold);
             letter-spacing: 3px;
         }
 
-        .menu-subtitle {
-            font-size: 12px;
+        #account-panel input,
+        #character-panel input,
+        #character-panel select {
+            display: block;
+            width: 100%;
+            min-height: 44px;
+            margin: 12px 0;
+            padding: 0 12px;
+            box-sizing: border-box;
+            border: 1px solid rgba(216, 183, 122, .25);
+            background: #0b1320;
+            color: #f0eadb;
         }
 
-        .menu-bottom {
-            gap: 8px;
-        }
-    }
-
-    @media (prefers-reduced-motion: no-preference) {
-
-        .skyline-glow {
-            animation: islandGlow 5s ease-in-out infinite alternate;
+        #account-panel button,
+        #character-panel button {
+            min-height: 42px;
+            padding: 0 18px;
+            border: 1px solid var(--menu-border);
+            background: #665438;
+            color: #fff0d0;
         }
 
-        @keyframes islandGlow {
-            from {
-                opacity: .5;
-                transform: scale(.95);
+        #account-message,
+        #character-message {
+            text-align: center;
+            color: var(--menu-gold-light);
+        }
+
+        #account-back,
+        #character-back {
+            display: block;
+            margin: 20px auto;
+        }
+
+        #character-list {
+            max-width: 850px;
+            margin: 20px auto;
+        }
+
+        #character-form {
+            max-width: 500px;
+            margin: 20px auto;
+        }
+
+        /* SERVER STATUS */
+
+        #server-status {
+            position: fixed;
+            z-index: 100;
+            right: 12px;
+            bottom: 12px;
+            padding: 8px 12px;
+            border: 1px solid rgba(216, 183, 122, .2);
+            background: rgba(7, 12, 21, .9);
+            color: #b6c6b2;
+            font-family: Arial, sans-serif;
+            font-size: 10px;
+            letter-spacing: 1px;
+        }
+
+        /* CANVAS */
+
+        #game-canvas {
+            display: block;
+            width: 100%;
+            height: auto;
+            max-width: 1280px;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+            background: #182b24;
+        }
+
+        @media (max-width: 700px) {
+            #main-menu {
+                min-height: 100svh;
+                padding: 20px;
             }
 
-            to {
-                opacity: 1;
-                transform: scale(1.08);
+            #main-menu::after {
+                top: 12%;
+                right: 9%;
+                width: 105px;
+            }
+
+            .menu-skyline {
+                right: -22%;
+                bottom: 19%;
+                width: 110%;
+                height: 40%;
+                opacity: .58;
+            }
+
+            .menu-main-content {
+                padding: 55px 0 45px;
+            }
+
+            .menu-title {
+                font-size: clamp(46px, 13vw, 70px);
+            }
+
+            .menu-title span {
+                letter-spacing: 8px;
+            }
+
+            .menu-description {
+                max-width: 310px;
+                font-size: 11px;
+            }
+
+            .menu-actions {
+                width: 100%;
+                max-width: 340px;
+            }
+
+            .menu-bottom {
+                align-items: flex-start;
+            }
+
+            .menu-copyright {
+                max-width: 130px;
+                line-height: 1.7;
+            }
+
+            #account-forms {
+                grid-template-columns: 1fr;
             }
         }
-    }
+
+        @media (max-width: 380px) {
+            #main-menu {
+                padding: 15px;
+            }
+
+            .menu-version {
+                font-size: 8px;
+            }
+
+            .menu-title {
+                font-size: 43px;
+            }
+
+            .menu-eyebrow {
+                font-size: 9px;
+                letter-spacing: 3px;
+            }
+
+            .menu-subtitle {
+                font-size: 12px;
+            }
+
+            .menu-bottom {
+                gap: 8px;
+            }
+        }
+
+        @media (prefers-reduced-motion: no-preference) {
+            .skyline-glow {
+                animation: islandGlow 5s ease-in-out infinite alternate;
+            }
+
+            @keyframes islandGlow {
+                from {
+                    opacity: .5;
+                    transform: scale(.95);
+                }
+
+                to {
+                    opacity: 1;
+                    transform: scale(1.08);
+                }
+            }
+        }
     </style>
 
 </head>
@@ -694,18 +630,12 @@
 
         </div>
 
-        <!-- Fantasy skyline -->
-
         <div class="menu-skyline" aria-hidden="true">
-
             <div class="skyline-glow"></div>
             <div class="skyline-island"></div>
             <div class="skyline-castle"></div>
             <div class="skyline-tower"></div>
-
         </div>
-
-        <!-- Main title and menu -->
 
         <div class="menu-main-content">
 
@@ -732,39 +662,29 @@
 
             <div class="menu-actions">
 
-                <button
-                    id="start-game"
-                    class="menu-action menu-action-primary"
-                >
+                <button id="start-game"
+                    class="menu-action menu-action-primary">
                     ENTER THE WORLD
                 </button>
 
-                <button
-                    id="create-character"
-                    class="menu-action"
-                >
+                <button id="create-character"
+                    class="menu-action">
                     CHARACTER
                 </button>
 
-                <button
-                    id="settings-button"
-                    class="menu-action"
-                >
+                <button id="settings-button"
+                    class="menu-action">
                     SETTINGS
                 </button>
 
-                <button
-                    id="account-button"
-                    class="menu-action"
-                >
+                <button id="account-button"
+                    class="menu-action">
                     ACCOUNT
                 </button>
 
             </div>
 
         </div>
-
-        <!-- World information -->
 
         <footer class="menu-bottom">
 
@@ -797,19 +717,15 @@
 
                 <h3>LOGIN</h3>
 
-                <input
-                    id="login-username"
+                <input id="login-username"
                     type="text"
                     placeholder="Username or Email"
-                    required
-                >
+                    required>
 
-                <input
-                    id="login-password"
+                <input id="login-password"
                     type="password"
                     placeholder="Password"
-                    required
-                >
+                    required>
 
                 <button type="submit">LOGIN</button>
 
@@ -819,26 +735,20 @@
 
                 <h3>REGISTER</h3>
 
-                <input
-                    id="register-username"
+                <input id="register-username"
                     type="text"
                     placeholder="Username"
-                    required
-                >
+                    required>
 
-                <input
-                    id="register-email"
+                <input id="register-email"
                     type="email"
                     placeholder="Email"
-                    required
-                >
+                    required>
 
-                <input
-                    id="register-password"
+                <input id="register-password"
                     type="password"
                     placeholder="Password"
-                    required
-                >
+                    required>
 
                 <button type="submit">REGISTER</button>
 
@@ -880,14 +790,12 @@
 
         <form id="character-form">
 
-            <input
-                id="character-name"
+            <input id="character-name"
                 type="text"
                 placeholder="Character Name"
                 minlength="3"
                 maxlength="20"
-                required
-            >
+                required>
 
             <select id="character-race" required>
                 <option value="">Select Race</option>
@@ -915,10 +823,8 @@
                 <option value="Priest">Priest</option>
             </select>
 
-            <button
-                id="character-create-submit"
-                type="submit"
-            >
+            <button id="character-create-submit"
+                type="submit">
                 CREATE CHARACTER
             </button>
 
@@ -954,10 +860,8 @@
                     <span class="world-status-label">HP</span>
 
                     <div class="world-bar">
-                        <div
-                            id="world-hp-bar"
-                            class="world-bar-fill"
-                        ></div>
+                        <div id="world-hp-bar"
+                            class="world-bar-fill"></div>
                     </div>
 
                     <span id="world-hp-text">100/100</span>
@@ -969,10 +873,8 @@
                     <span class="world-status-label">MP</span>
 
                     <div class="world-bar">
-                        <div
-                            id="world-mp-bar"
-                            class="world-bar-fill"
-                        ></div>
+                        <div id="world-mp-bar"
+                            class="world-bar-fill"></div>
                     </div>
 
                     <span id="world-mp-text">100/100</span>
@@ -980,10 +882,8 @@
                 </div>
 
                 <div class="world-bar">
-                    <div
-                        id="world-exp-bar"
-                        class="world-bar-fill"
-                    ></div>
+                    <div id="world-exp-bar"
+                        class="world-bar-fill"></div>
                 </div>
 
             </div>
@@ -1002,8 +902,8 @@
 
                 <canvas
                     id="game-canvas"
-                    width="1280"
-                    height="720"
+                    width="320"
+                    height="180"
                 ></canvas>
 
             </main>
@@ -1068,20 +968,27 @@
 
     <!-- =================================
          GAME SCRIPTS
+         LOAD ORDER IS IMPORTANT
     ================================== -->
 
     <script src="/socket.io/socket.io.js"></script>
 
+    <!-- Existing configuration -->
     <script src="js/config.js"></script>
 
+    <!-- Authentication -->
     <script src="js/auth.js"></script>
 
+    <!-- Character system -->
     <script src="js/characters.js"></script>
 
-    <script src="js/main.js"></script>
-
+    <!-- World Renderer MUST load before main.js -->
     <script src="js/world-renderer.js"></script>
 
+    <!-- Main Game Controller -->
+    <script src="js/main.js"></script>
+
+    <!-- Character UI -->
     <script src="js/character-ui.js"></script>
 
 
@@ -1090,250 +997,257 @@
     ================================== -->
 
     <script>
+        "use strict";
 
-    "use strict";
+        document.addEventListener("DOMContentLoaded", () => {
 
-    document.addEventListener("DOMContentLoaded", () => {
+            const $ = id => document.getElementById(id);
 
-        const $ = id => document.getElementById(id);
+            /* MAIN MENU */
 
-        /* MAIN MENU */
+            $("start-game").addEventListener("click", () => {
 
-        $("start-game").addEventListener("click", () => {
+                if (!window.ECHO_AUTH?.isLoggedIn()) {
 
-            if (!window.ECHO_AUTH.isLoggedIn()) {
+                    $("account-panel").hidden = false;
+                    $("main-menu").hidden = true;
 
-                $("account-panel").hidden = false;
+                    return;
+                }
+
+                window.ECHO_CHARACTER_UI.open();
+
+            });
+
+            $("create-character").addEventListener("click", () => {
+
+                if (!window.ECHO_AUTH?.isLoggedIn()) {
+
+                    $("account-panel").hidden = false;
+                    $("main-menu").hidden = true;
+
+                    return;
+                }
+
+                window.ECHO_CHARACTER_UI.open();
+
+            });
+
+            $("account-button").addEventListener("click", () => {
+
                 $("main-menu").hidden = true;
-
-                return;
-
-            }
-
-            window.ECHO_CHARACTER_UI.open();
-
-        });
-
-        $("create-character").addEventListener("click", () => {
-
-            if (!window.ECHO_AUTH.isLoggedIn()) {
-
                 $("account-panel").hidden = false;
-                $("main-menu").hidden = true;
 
-                return;
+            });
 
-            }
+            $("account-back").addEventListener("click", () => {
 
-            window.ECHO_CHARACTER_UI.open();
+                $("account-panel").hidden = true;
+                $("main-menu").hidden = false;
 
-        });
+            });
 
-        $("account-button").addEventListener("click", () => {
 
-            $("main-menu").hidden = true;
-            $("account-panel").hidden = false;
+            /* LOGIN */
 
-        });
+            $("login-form").addEventListener("submit", async event => {
 
-        $("account-back").addEventListener("click", () => {
+                event.preventDefault();
 
-            $("account-panel").hidden = true;
-            $("main-menu").hidden = false;
+                try {
 
-        });
+                    await window.ECHO_AUTH.login(
+                        $("login-username").value,
+                        $("login-password").value
+                    );
 
-        /* LOGIN */
+                    $("account-message").textContent =
+                        "Login successful!";
 
-        $("login-form").addEventListener("submit", async event => {
+                    $("login-form").reset();
 
-            event.preventDefault();
+                } catch (error) {
 
-            try {
+                    $("account-message").textContent =
+                        error.message;
 
-                await window.ECHO_AUTH.login(
-                    $("login-username").value,
-                    $("login-password").value
-                );
+                }
+
+            });
+
+
+            /* REGISTER */
+
+            $("register-form").addEventListener("submit", async event => {
+
+                event.preventDefault();
+
+                try {
+
+                    await window.ECHO_AUTH.register({
+
+                        username: $("register-username").value,
+                        email: $("register-email").value,
+                        password: $("register-password").value
+
+                    });
+
+                    $("account-message").textContent =
+                        "Registration successful!";
+
+                    $("register-form").reset();
+
+                } catch (error) {
+
+                    $("account-message").textContent =
+                        error.message;
+
+                }
+
+            });
+
+
+            /* LOGOUT */
+
+            $("logout-button").addEventListener("click", () => {
+
+                window.ECHO_AUTH.logout();
+
+                $("account-profile").hidden = true;
+                $("account-forms").hidden = false;
 
                 $("account-message").textContent =
-                    "Login successful!";
+                    "Logged out.";
 
-                $("login-form").reset();
+            });
 
-            } catch (error) {
 
-                $("account-message").textContent =
-                    error.message;
+            /* ENTER WORLD */
 
-            }
+            document.addEventListener("echo:world-entered", event => {
 
-        });
+                const player =
+                    event.detail?.player ||
+                    window.ECHO_GAME?.player;
 
-        /* REGISTER */
+                if (!player) return;
 
-        $("register-form").addEventListener("submit", async event => {
+                $("main-menu").hidden = true;
+                $("account-panel").hidden = true;
+                $("character-panel").hidden = true;
+                $("game-screen").hidden = false;
 
-            event.preventDefault();
+                $("world-player-name").textContent =
+                    player.name || "Player";
 
-            try {
+                $("world-player-level").textContent =
+                    "Level " + (player.level || 1);
 
-                await window.ECHO_AUTH.register({
+                $("world-player-job").textContent =
+                    player.job || "Adventurer";
 
-                    username: $("register-username").value,
-                    email: $("register-email").value,
-                    password: $("register-password").value
+                const hp = player.hp ?? 100;
+                const maxHp = player.maxHp ?? 100;
+
+                const mp = player.mp ?? 100;
+                const maxMp = player.maxMp ?? 100;
+
+                $("world-hp-text").textContent =
+                    hp + "/" + maxHp;
+
+                $("world-mp-text").textContent =
+                    mp + "/" + maxMp;
+
+                $("world-hp-bar").style.width =
+                    Math.max(0, Math.min(100, hp / maxHp * 100)) + "%";
+
+                $("world-mp-bar").style.width =
+                    Math.max(0, Math.min(100, mp / maxMp * 100)) + "%";
+
+                $("map-name").textContent =
+                    player.map || "Echo Isles";
+
+                if (window.ECHO_WORLD_RENDERER) {
+
+                    window.ECHO_WORLD_RENDERER.updatePlayer({
+                        x: player.x,
+                        y: player.y,
+                        name: player.name
+                    });
+
+                    window.ECHO_WORLD_RENDERER.start();
+
+                }
+
+            });
+
+
+            /* CHAT */
+
+            $("chat-form").addEventListener("submit", event => {
+
+                event.preventDefault();
+
+                const message =
+                    $("chat-input").value.trim();
+
+                if (!message) return;
+
+                const socket =
+                    window.ECHO_GAME?.network?.socket;
+
+                if (!socket || !socket.connected) return;
+
+                socket.emit("chat:send", { message });
+
+                $("chat-input").value = "";
+
+            });
+
+
+            /* GAME MENU */
+
+            [
+                "inventory-button",
+                "equipment-button",
+                "skills-button",
+                "quests-button",
+                "professions-button",
+                "guild-button"
+            ].forEach(id => {
+
+                $(id).addEventListener("click", () => {
+
+                    alert("This feature is under development.");
 
                 });
 
-                $("account-message").textContent =
-                    "Registration successful!";
+            });
 
-                $("register-form").reset();
 
-            } catch (error) {
+            /* LEAVE WORLD */
 
-                $("account-message").textContent =
-                    error.message;
+            $("leave-world").addEventListener("click", () => {
 
-            }
+                if (window.ECHO_WORLD_RENDERER) {
+                    window.ECHO_WORLD_RENDERER.stop();
+                }
 
-        });
+                if (window.ECHO_GAME?.network?.socket) {
 
-        /* LOGOUT */
+                    window.ECHO_GAME.network.socket.disconnect();
 
-        $("logout-button").addEventListener("click", () => {
+                    window.ECHO_GAME.network.socket = null;
 
-            window.ECHO_AUTH.logout();
+                }
 
-            $("account-profile").hidden = true;
-            $("account-forms").hidden = false;
-
-            $("account-message").textContent =
-                "Logged out.";
-
-        });
-
-        /* ENTER WORLD */
-
-        document.addEventListener("echo:world-entered", event => {
-
-            const player =
-                event.detail?.player ||
-                window.ECHO_GAME.player;
-
-            if (!player) return;
-
-            $("main-menu").hidden = true;
-            $("account-panel").hidden = true;
-            $("character-panel").hidden = true;
-            $("game-screen").hidden = false;
-
-            $("world-player-name").textContent =
-                player.name || "Player";
-
-            $("world-player-level").textContent =
-                "Level " + (player.level || 1);
-
-            $("world-player-job").textContent =
-                player.job || "Adventurer";
-
-            $("world-hp-text").textContent =
-                (player.hp ?? 100) + "/100";
-
-            $("world-mp-text").textContent =
-                (player.mp ?? 100) + "/100";
-
-            $("world-hp-bar").style.width =
-                Math.min(100, player.hp ?? 100) + "%";
-
-            $("world-mp-bar").style.width =
-                Math.min(100, player.mp ?? 100) + "%";
-
-            $("map-name").textContent =
-                player.map || "Echo Isles";
-
-            if (window.ECHO_RENDERER) {
-
-                window.ECHO_RENDERER.updatePlayer({
-
-                    x: player.x,
-                    y: player.y,
-                    name: player.name
-
-                });
-
-                window.ECHO_RENDERER.start();
-
-            }
-
-        });
-
-        /* CHAT */
-
-        $("chat-form").addEventListener("submit", event => {
-
-            event.preventDefault();
-
-            const message =
-                $("chat-input").value.trim();
-
-            if (!message) return;
-
-            const socket =
-                window.ECHO_GAME?.network?.socket;
-
-            if (!socket || !socket.connected) return;
-
-            socket.emit("chat:send", { message });
-
-            $("chat-input").value = "";
-
-        });
-
-        /* GAME MENU */
-
-        [
-            "inventory-button",
-            "equipment-button",
-            "skills-button",
-            "quests-button",
-            "professions-button",
-            "guild-button"
-        ].forEach(id => {
-
-            $(id).addEventListener("click", () => {
-
-                alert("This feature is under development.");
+                $("game-screen").hidden = true;
+                $("main-menu").hidden = false;
 
             });
 
         });
-
-        /* LEAVE WORLD */
-
-        $("leave-world").addEventListener("click", () => {
-
-            if (window.ECHO_RENDERER) {
-                window.ECHO_RENDERER.stop();
-            }
-
-            if (window.ECHO_GAME?.network?.socket) {
-
-                window.ECHO_GAME.network.socket.disconnect();
-
-                window.ECHO_GAME.network.socket = null;
-
-            }
-
-            $("game-screen").hidden = true;
-            $("main-menu").hidden = false;
-
-        });
-
-    });
-
     </script>
 
 </body>
-    </html>
+                    </html>
