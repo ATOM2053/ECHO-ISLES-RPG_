@@ -1,7 +1,8 @@
 /* =========================================
    ECHO ISLES RPG
    MAIN GAME CONTROLLER
-   Version: 0.8.0
+   Version: 0.9.0
+   MOVEMENT & COLLISION UPDATE
 ========================================= */
 
 "use strict";
@@ -66,7 +67,6 @@
 
         world: {
             currentMap: "starting_village",
-
             players: new Map(),
             monsters: new Map(),
             npcs: new Map()
@@ -145,7 +145,6 @@
                     GAME.state.playing = false;
 
                     GAME.movement.stop();
-
                     GAME.hideJoystick();
 
                     console.log(
@@ -205,8 +204,7 @@
                                 remote.id,
                                 {
                                     ...remote,
-                                    moving: false,
-                                    movementTimer: null
+                                    moving: false
                                 }
                             );
 
@@ -219,17 +217,9 @@
                     GAME.syncRenderer();
 
                     GAME.movement.start();
-
                     GAME.showJoystick();
 
-                    console.log(
-                        "[WORLD] World initialized"
-                    );
-
-                    console.log(
-                        "[WORLD] Remote players:",
-                        GAME.world.players.size
-                    );
+                    console.log("[WORLD] World initialized");
 
                 });
 
@@ -247,17 +237,11 @@
                         remote.id,
                         {
                             ...remote,
-                            moving: false,
-                            movementTimer: null
+                            moving: false
                         }
                     );
 
                     GAME.syncRenderer();
-
-                    console.log(
-                        "[WORLD] Player joined:",
-                        remote.name
-                    );
 
                 });
 
@@ -268,18 +252,10 @@
                     if (!data?.id) return;
 
                     // LOCAL PLAYER
+                    // Do not overwrite local predicted position.
 
                     if (data.id === GAME.player.id) {
-
-                        GAME.player = {
-                            ...GAME.player,
-                            ...data
-                        };
-
-                        GAME.syncRenderer();
-
                         return;
-
                     }
 
                     // REMOTE PLAYER
@@ -304,9 +280,10 @@
                             ? data.direction
                             : previous.direction,
 
-                        moving: typeof data.moving === "boolean"
-                            ? data.moving
-                            : false
+                        moving:
+                            typeof data.moving === "boolean"
+                                ? data.moving
+                                : false
                     };
 
                     GAME.world.players.set(
@@ -329,21 +306,9 @@
 
                     if (!playerId) return;
 
-                    const remote =
-                        GAME.world.players.get(playerId);
-
-                    if (remote?.movementTimer) {
-                        clearTimeout(remote.movementTimer);
-                    }
-
                     GAME.world.players.delete(playerId);
 
                     GAME.syncRenderer();
-
-                    console.log(
-                        "[WORLD] Player left:",
-                        playerId
-                    );
 
                 });
 
@@ -372,7 +337,6 @@
                     if (socket.connected) {
 
                         resolve(socket);
-
                         return;
 
                     }
@@ -390,7 +354,6 @@
                     const onConnect = () => {
 
                         clearTimeout(timer);
-
                         resolve(socket);
 
                     };
@@ -426,11 +389,17 @@
             lastUpdate: 0,
             lastNetworkUpdate: 0,
 
+            networkInterval: 100,
+
             animationFrame: null,
 
             joystickActive: false,
 
             keys: new Set(),
+
+            // ==================================
+            // START
+            // ==================================
 
             start() {
 
@@ -447,9 +416,14 @@
 
             },
 
+            // ==================================
+            // STOP
+            // ==================================
+
             stop() {
 
-                const wasMoving = GAME.player.moving;
+                const wasMoving =
+                    GAME.player.moving;
 
                 if (this.animationFrame !== null) {
 
@@ -481,6 +455,10 @@
 
             },
 
+            // ==================================
+            // JOYSTICK
+            // ==================================
+
             setJoystick(x, y) {
 
                 this.joystick.x =
@@ -494,6 +472,10 @@
                     Math.abs(y) > 0.05;
 
             },
+
+            // ==================================
+            // KEYBOARD
+            // ==================================
 
             updateKeyboard() {
 
@@ -533,12 +515,89 @@
 
             },
 
+            // ==================================
+            // COLLISION CHECK
+            // ==================================
+
+            canMoveTo(x, y) {
+
+                const renderer =
+                    window.ECHO_WORLD_RENDERER;
+
+                // Collision map is not ready yet.
+                // Do not block movement until loaded.
+
+                if (
+                    !renderer ||
+                    !renderer.collisionReady
+                ) {
+                    return true;
+                }
+
+                if (
+                    typeof renderer.canMoveTo !== "function"
+                ) {
+                    return true;
+                }
+
+                return renderer.canMoveTo(x, y);
+
+            },
+
+            // ==================================
+            // APPLY MOVEMENT
+            // ==================================
+
+            movePlayer(dx, dy) {
+
+                const currentX = GAME.player.x;
+                const currentY = GAME.player.y;
+
+                const nextX = currentX + dx;
+                const nextY = currentY + dy;
+
+                let moved = false;
+
+                // Check X axis independently.
+
+                if (
+                    dx !== 0 &&
+                    this.canMoveTo(nextX, currentY)
+                ) {
+
+                    GAME.player.x = nextX;
+                    moved = true;
+
+                }
+
+                // Check Y axis independently.
+
+                if (
+                    dy !== 0 &&
+                    this.canMoveTo(
+                        GAME.player.x,
+                        nextY
+                    )
+                ) {
+
+                    GAME.player.y = nextY;
+                    moved = true;
+
+                }
+
+                return moved;
+
+            },
+
+            // ==================================
+            // UPDATE LOOP
+            // ==================================
+
             update(time) {
 
                 if (!GAME.state.playing) {
 
                     this.animationFrame = null;
-
                     return;
 
                 }
@@ -569,39 +628,33 @@
 
                 }
 
-                const isMoving =
+                const hasInput =
                     Math.abs(x) > 0.01 ||
                     Math.abs(y) > 0.01;
 
                 const wasMoving =
                     GAME.player.moving;
 
-                GAME.player.moving = isMoving;
+                let moved = false;
 
-                if (isMoving) {
+                if (hasInput) {
 
-                    GAME.player.x +=
+                    const dx =
                         x * this.speed * deltaTime;
 
-                    GAME.player.y +=
+                    const dy =
                         y * this.speed * deltaTime;
 
-                    GAME.player.x = Math.max(
-                        0,
-                        Math.min(10000, GAME.player.x)
-                    );
+                    moved = this.movePlayer(dx, dy);
 
-                    GAME.player.y = Math.max(
-                        0,
-                        Math.min(10000, GAME.player.y)
-                    );
+                    // Direction
 
                     if (Math.abs(x) > Math.abs(y)) {
 
                         this.lastDirection =
                             x > 0 ? "right" : "left";
 
-                    } else {
+                    } else if (Math.abs(y) > 0.01) {
 
                         this.lastDirection =
                             y > 0 ? "down" : "up";
@@ -611,10 +664,19 @@
                     GAME.player.direction =
                         this.lastDirection;
 
+                }
+
+                // Moving state reflects actual movement.
+
+                GAME.player.moving = moved;
+
+                if (moved) {
+
                     GAME.syncRenderer();
 
                     if (
-                        time - this.lastNetworkUpdate >= 100
+                        time - this.lastNetworkUpdate >=
+                        this.networkInterval
                     ) {
 
                         this.sendPosition();
@@ -625,13 +687,11 @@
 
                 } else if (wasMoving) {
 
-                    // PLAYER STOPPED
+                    // Stop movement when blocked or input released.
 
                     GAME.player.moving = false;
 
                     GAME.syncRenderer();
-
-                    // แจ้งเซิร์ฟเวอร์ว่าหยุดเดิน
 
                     this.sendPosition();
 
@@ -645,6 +705,10 @@
                     );
 
             },
+
+            // ==================================
+            // SEND POSITION
+            // ==================================
 
             sendPosition() {
 
@@ -679,8 +743,6 @@
 
             if (!renderer) return;
 
-            // LOCAL PLAYER
-
             renderer.updatePlayer({
 
                 id: GAME.player.id,
@@ -695,8 +757,6 @@
                 moving: GAME.player.moving
 
             });
-
-            // REMOTE PLAYERS
 
             GAME.world.players.forEach(remote => {
 
@@ -784,8 +844,7 @@
                                         remote.id,
                                         {
                                             ...remote,
-                                            moving: false,
-                                            movementTimer: null
+                                            moving: false
                                         }
                                     );
 
@@ -871,10 +930,7 @@
 
             window.addEventListener("blur", () => {
 
-                GAME.movement.keys.clear();
-
-                GAME.movement.keyboard.x = 0;
-                GAME.movement.keyboard.y = 0;
+                GAME.movement.stop();
 
             });
 
@@ -1123,7 +1179,7 @@
             );
 
             console.log(
-                "Game Controller Initialized"
+                "Game Controller Version 0.9.0"
             );
 
             console.log(
@@ -1166,9 +1222,7 @@
                     GAME.syncRenderer();
 
                     if (window.ECHO_WORLD_RENDERER) {
-
                         window.ECHO_WORLD_RENDERER.start();
-
                     }
 
                 }
