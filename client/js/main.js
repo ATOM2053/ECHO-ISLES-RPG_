@@ -1,8 +1,8 @@
 /* =========================================
    ECHO ISLES RPG
    MAIN GAME CONTROLLER
-   Version: 0.9.0
-   MOVEMENT & COLLISION UPDATE
+   Version: 1.0.0
+   MOVEMENT FIX & COLLISION TEST
 ========================================= */
 
 "use strict";
@@ -124,8 +124,6 @@
 
                 this.socket = socket;
 
-                // CONNECTION
-
                 socket.on("connect", () => {
 
                     GAME.state.connected = true;
@@ -136,8 +134,6 @@
                     );
 
                 });
-
-                // DISCONNECTION
 
                 socket.on("disconnect", reason => {
 
@@ -153,8 +149,6 @@
                     );
 
                 });
-
-                // CONNECTION ERROR
 
                 socket.on("connect_error", error => {
 
@@ -251,21 +245,14 @@
 
                     if (!data?.id) return;
 
-                    // LOCAL PLAYER
-                    // Do not overwrite local predicted position.
-
                     if (data.id === GAME.player.id) {
                         return;
                     }
 
-                    // REMOTE PLAYER
-
                     const previous =
                         GAME.world.players.get(data.id);
 
-                    if (!previous) {
-                        return;
-                    }
+                    if (!previous) return;
 
                     const updated = {
                         ...previous,
@@ -397,9 +384,7 @@
 
             keys: new Set(),
 
-            // ==================================
             // START
-            // ==================================
 
             start() {
 
@@ -414,11 +399,11 @@
                         this.update(time)
                     );
 
+                console.log("[MOVEMENT] Started");
+
             },
 
-            // ==================================
             // STOP
-            // ==================================
 
             stop() {
 
@@ -455,9 +440,7 @@
 
             },
 
-            // ==================================
             // JOYSTICK
-            // ==================================
 
             setJoystick(x, y) {
 
@@ -473,9 +456,7 @@
 
             },
 
-            // ==================================
             // KEYBOARD
-            // ==================================
 
             updateKeyboard() {
 
@@ -515,83 +496,36 @@
 
             },
 
-            // ==================================
             // COLLISION CHECK
-            // ==================================
+            // TEMPORARILY DISABLED
 
             canMoveTo(x, y) {
 
-                const renderer =
-                    window.ECHO_WORLD_RENDERER;
-
-                // Collision map is not ready yet.
-                // Do not block movement until loaded.
-
-                if (
-                    !renderer ||
-                    !renderer.collisionReady
-                ) {
-                    return true;
-                }
-
-                if (
-                    typeof renderer.canMoveTo !== "function"
-                ) {
-                    return true;
-                }
-
-                return renderer.canMoveTo(x, y);
+                return (
+                    Number.isFinite(x) &&
+                    Number.isFinite(y)
+                );
 
             },
 
-            // ==================================
             // APPLY MOVEMENT
-            // ==================================
 
             movePlayer(dx, dy) {
 
-                const currentX = GAME.player.x;
-                const currentY = GAME.player.y;
+                const nextX =
+                    GAME.player.x + dx;
 
-                const nextX = currentX + dx;
-                const nextY = currentY + dy;
+                const nextY =
+                    GAME.player.y + dy;
 
-                let moved = false;
+                GAME.player.x = nextX;
+                GAME.player.y = nextY;
 
-                // Check X axis independently.
-
-                if (
-                    dx !== 0 &&
-                    this.canMoveTo(nextX, currentY)
-                ) {
-
-                    GAME.player.x = nextX;
-                    moved = true;
-
-                }
-
-                // Check Y axis independently.
-
-                if (
-                    dy !== 0 &&
-                    this.canMoveTo(
-                        GAME.player.x,
-                        nextY
-                    )
-                ) {
-
-                    GAME.player.y = nextY;
-                    moved = true;
-
-                }
-
-                return moved;
+                return true;
 
             },
 
-            // ==================================
             // UPDATE LOOP
-            // ==================================
 
             update(time) {
 
@@ -647,8 +581,6 @@
 
                     moved = this.movePlayer(dx, dy);
 
-                    // Direction
-
                     if (Math.abs(x) > Math.abs(y)) {
 
                         this.lastDirection =
@@ -665,8 +597,6 @@
                         this.lastDirection;
 
                 }
-
-                // Moving state reflects actual movement.
 
                 GAME.player.moving = moved;
 
@@ -687,8 +617,6 @@
 
                 } else if (wasMoving) {
 
-                    // Stop movement when blocked or input released.
-
                     GAME.player.moving = false;
 
                     GAME.syncRenderer();
@@ -706,9 +634,7 @@
 
             },
 
-            // ==================================
             // SEND POSITION
-            // ==================================
 
             sendPosition() {
 
@@ -947,6 +873,9 @@
             if (
                 document.getElementById("mobile-joystick")
             ) {
+                this.joystickElement =
+                    document.getElementById("mobile-joystick");
+
                 return;
             }
 
@@ -1012,7 +941,10 @@
             const gameScreen =
                 document.getElementById("game-screen");
 
-            if (!gameScreen) return;
+            if (!gameScreen) {
+                console.error("[JOYSTICK] Game screen not found");
+                return;
+            }
 
             const joystick =
                 document.createElement("div");
@@ -1137,6 +1069,8 @@
 
         },
 
+        // SHOW JOYSTICK
+
         showJoystick() {
 
             if (!this.joystickElement) return;
@@ -1150,6 +1084,8 @@
             }
 
         },
+
+        // HIDE JOYSTICK
 
         hideJoystick() {
 
@@ -1179,7 +1115,11 @@
             );
 
             console.log(
-                "Game Controller Version 0.9.0"
+                "Game Controller Version 1.0.0"
+            );
+
+            console.log(
+                "Collision temporarily disabled"
             );
 
             console.log(
