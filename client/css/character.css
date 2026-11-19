@@ -1,7 +1,7 @@
 /* =========================================
    ECHO ISLES RPG
    CHARACTER SYSTEM UI
-   Version: 3.0.0
+   Version: 4.0.0
 ========================================= */
 
 :root {
@@ -22,11 +22,14 @@
 #character-panel {
     position: relative;
     isolation: isolate;
-    min-height: 100svh;
+
     width: 100%;
-    box-sizing: border-box;
-    overflow-y: auto;
+    min-height: 100svh;
+
     padding: 35px 20px 50px;
+    box-sizing: border-box;
+
+    overflow-y: auto;
 
     color: var(--character-text);
 
@@ -47,9 +50,11 @@
 
 #character-panel::before {
     content: "";
+
     position: fixed;
     z-index: -1;
     inset: 0;
+
     pointer-events: none;
     opacity: .25;
 
@@ -63,16 +68,18 @@
 }
 
 /* =========================================
-   CHARACTER TITLE
+   TITLE
 ========================================= */
 
 #character-panel > h2 {
     margin: 5px 0 12px;
 
     color: var(--character-gold-light);
+
     font-size: clamp(23px, 4vw, 34px);
     font-weight: normal;
     letter-spacing: 5px;
+
     text-align: center;
 
     text-shadow:
@@ -83,9 +90,11 @@
     content: "CHOOSE YOUR DESTINY";
 
     display: block;
+
     margin-top: 12px;
 
     color: var(--character-muted);
+
     font-family: Arial, sans-serif;
     font-size: 9px;
     letter-spacing: 4px;
@@ -100,11 +109,12 @@
     display: grid;
 
     grid-template-columns:
-        repeat(auto-fit, minmax(220px, 1fr));
+        repeat(auto-fit, minmax(240px, 1fr));
 
-    gap: 18px;
+    gap: 20px;
 
-    width: min(100%, 950px);
+    width: min(100%, 1050px);
+
     margin: 30px auto;
 }
 
@@ -114,24 +124,30 @@
 
 .character-card {
     position: relative;
-    overflow: hidden;
+
+    display: grid;
+
+    grid-template-columns: 90px 1fr;
+    grid-template-rows: 1fr auto;
+
+    gap: 12px 18px;
 
     min-width: 0;
-    padding: 22px;
+    padding: 20px;
 
     box-sizing: border-box;
+
+    overflow: hidden;
 
     background:
         linear-gradient(
             145deg,
-            rgba(43, 59, 82, .95),
-            rgba(15, 25, 41, .98)
+            rgba(43, 59, 82, .97),
+            rgba(15, 25, 41, .99)
         );
 
     border: 1px solid rgba(217, 179, 110, .2);
     border-radius: 5px;
-
-    text-align: center;
 
     transition:
         transform .25s ease,
@@ -141,19 +157,22 @@
 
 .character-card::before {
     content: "";
+
     position: absolute;
 
     top: 0;
     left: 15%;
+
     width: 70%;
     height: 1px;
 
-    background: linear-gradient(
-        90deg,
-        transparent,
-        var(--character-gold),
-        transparent
-    );
+    background:
+        linear-gradient(
+            90deg,
+            transparent,
+            var(--character-gold),
+            transparent
+        );
 }
 
 .character-card:hover {
@@ -174,22 +193,257 @@
         0 0 25px rgba(217, 179, 110, .15);
 }
 
-.character-card h3 {
-    margin: 0 0 15px;
+/* =========================================
+   CHARACTER AVATAR
+========================================= */
 
-    color: var(--character-gold-light);
-    font-size: 21px;
-    font-weight: normal;
-    letter-spacing: 1px;
+.character-avatar {
+    position: relative;
+
+    display: flex;
+
+    grid-column: 1;
+    grid-row: 1;
+
+    align-items: center;
+    justify-content: center;
+
+    width: 90px;
+    height: 115px;
+
+    overflow: hidden;
+
+    background:
+        radial-gradient(
+            circle at 50% 35%,
+            rgba(255, 229, 174, .25),
+            transparent 60%
+        ),
+        linear-gradient(
+            160deg,
+            #344a67,
+            #101a2b
+        );
+
+    border: 1px solid rgba(217, 179, 110, .4);
+    border-radius: 4px;
+
+    box-shadow:
+        inset 0 0 20px rgba(0, 0, 0, .4);
 }
 
-.character-card p {
-    margin: 9px 0;
+.character-avatar::before {
+    content: "";
+
+    position: absolute;
+
+    width: 58px;
+    height: 58px;
+
+    border: 1px solid rgba(255, 229, 174, .3);
+    border-radius: 50%;
+
+    box-shadow:
+        0 0 20px rgba(217, 179, 110, .12);
+}
+
+.character-avatar-initial {
+    position: relative;
+    z-index: 1;
+
+    color: var(--character-gold-light);
+
+    font-size: 38px;
+    font-weight: normal;
+
+    text-shadow:
+        0 0 15px rgba(255, 229, 174, .4);
+}
+
+/* RACE THEMES */
+
+.character-avatar.human {
+    background:
+        radial-gradient(circle, #657b99, transparent 65%),
+        linear-gradient(160deg, #344a67, #101a2b);
+}
+
+.character-avatar.elf {
+    background:
+        radial-gradient(circle, #5c947c, transparent 65%),
+        linear-gradient(160deg, #244c43, #101a2b);
+}
+
+.character-avatar.dark-elf {
+    background:
+        radial-gradient(circle, #805c9d, transparent 65%),
+        linear-gradient(160deg, #45305b, #101322);
+}
+
+.character-avatar.dwarf {
+    background:
+        radial-gradient(circle, #a77a4e, transparent 65%),
+        linear-gradient(160deg, #67472e, #20150f);
+}
+
+.character-avatar.beastkin {
+    background:
+        radial-gradient(circle, #a58c50, transparent 65%),
+        linear-gradient(160deg, #64532d, #19190f);
+}
+
+.character-avatar.dragonkin {
+    background:
+        radial-gradient(circle, #a45c53, transparent 65%),
+        linear-gradient(160deg, #65302f, #1c1015);
+}
+
+/* =========================================
+   CHARACTER INFORMATION
+========================================= */
+
+.character-info {
+    grid-column: 2;
+    grid-row: 1;
+
+    min-width: 0;
+
+    text-align: left;
+}
+
+.character-name {
+    margin: 0 0 10px;
+
+    color: var(--character-gold-light);
+
+    font-size: 20px;
+    font-weight: normal;
+
+    overflow-wrap: anywhere;
+}
+
+.character-level {
+    display: inline-block;
+
+    margin: 0 0 8px !important;
+    padding: 4px 9px;
+
+    color: #f4dba8 !important;
+
+    background: rgba(217, 179, 110, .12);
+
+    border: 1px solid rgba(217, 179, 110, .25);
+}
+
+.character-info p {
+    margin: 6px 0;
 
     color: var(--character-muted);
+
     font-family: Arial, sans-serif;
-    font-size: 12px;
-    line-height: 1.6;
+    font-size: 11px;
+    line-height: 1.5;
+}
+
+.character-race::before {
+    content: "RACE  ";
+    color: var(--character-gold);
+}
+
+.character-job::before {
+    content: "CLASS  ";
+    color: var(--character-gold);
+}
+
+.character-gender::before {
+    content: "GENDER  ";
+    color: var(--character-gold);
+}
+
+/* =========================================
+   CHARACTER ACTION BUTTONS
+========================================= */
+
+.character-card .character-action {
+    grid-column: 1 / -1;
+    grid-row: 2;
+
+    width: 100%;
+    min-height: 42px;
+
+    padding: 10px;
+
+    color: #211a10;
+
+    background:
+        linear-gradient(
+            135deg,
+            #f5d99e,
+            #c19450
+        );
+
+    border: 1px solid #f1d39a;
+
+    font-family: Arial, sans-serif;
+    font-size: 10px;
+    font-weight: bold;
+    letter-spacing: 2px;
+
+    cursor: pointer;
+
+    transition: .2s ease;
+}
+
+.character-card .character-action:hover {
+    filter: brightness(1.15);
+    transform: translateY(-2px);
+}
+
+/* =========================================
+   ENTER WORLD BUTTON
+========================================= */
+
+.character-enter-button {
+    display: block;
+
+    width: min(100%, 420px);
+    min-height: 58px;
+
+    margin: 25px auto;
+
+    color: #211a10;
+
+    background:
+        linear-gradient(
+            135deg,
+            #ffe7b2,
+            #c18c42
+        );
+
+    border: 1px solid #ffe0a0;
+
+    font-family: Arial, sans-serif;
+    font-size: 13px;
+    font-weight: bold;
+    letter-spacing: 4px;
+
+    cursor: pointer;
+
+    box-shadow:
+        0 5px 25px rgba(217, 179, 110, .12);
+
+    transition: .2s ease;
+}
+
+.character-enter-button:hover {
+    filter: brightness(1.12);
+    transform: translateY(-2px);
+}
+
+.character-enter-button:disabled {
+    opacity: .45;
+    cursor: not-allowed;
+    transform: none;
 }
 
 /* =========================================
@@ -211,8 +465,21 @@
     line-height: 2;
 }
 
+.character-empty h3 {
+    color: var(--character-gold-light);
+
+    font-size: 17px;
+    font-weight: normal;
+    letter-spacing: 3px;
+}
+
+.character-empty p {
+    font-family: Arial, sans-serif;
+    font-size: 13px;
+}
+
 /* =========================================
-   CHARACTER MESSAGE
+   MESSAGE
 ========================================= */
 
 #character-message,
@@ -235,6 +502,7 @@
 
 #character-panel > h3 {
     width: min(100%, 700px);
+
     margin: 35px auto 20px;
     padding-bottom: 15px;
 
@@ -245,8 +513,13 @@
     font-size: 20px;
     font-weight: normal;
     letter-spacing: 3px;
+
     text-align: center;
 }
+
+/* =========================================
+   CHARACTER FORM
+========================================= */
 
 #character-form,
 .character-form {
@@ -257,8 +530,8 @@
     gap: 15px;
 
     width: min(100%, 700px);
-    margin: 0 auto;
 
+    margin: 0 auto;
     padding: 25px;
 
     box-sizing: border-box;
@@ -285,14 +558,13 @@
 #character-form select,
 .character-form input,
 .character-form select {
-
     width: 100%;
     min-width: 0;
     min-height: 49px;
 
-    box-sizing: border-box;
-
     padding: 12px 15px;
+
+    box-sizing: border-box;
 
     color: var(--character-text);
 
@@ -306,10 +578,7 @@
     font-family: Arial, sans-serif;
     font-size: 13px;
 
-    transition:
-        border-color .2s ease,
-        box-shadow .2s ease,
-        background .2s ease;
+    transition: .2s ease;
 }
 
 #character-form input::placeholder {
@@ -318,7 +587,6 @@
 
 #character-form input:focus,
 #character-form select:focus {
-
     border-color: var(--character-gold);
 
     background: #16243a;
@@ -332,8 +600,6 @@
     background: #101b2d;
 }
 
-/* CHARACTER NAME */
-
 #character-name {
     grid-column: 1 / -1;
 }
@@ -342,9 +608,7 @@
    CREATE BUTTON
 ========================================= */
 
-#character-create-submit,
-.character-action {
-
+#character-create-submit {
     grid-column: 1 / -1;
 
     min-height: 53px;
@@ -369,26 +633,15 @@
 
     cursor: pointer;
 
-    transition:
-        filter .2s ease,
-        transform .2s ease,
-        box-shadow .2s ease;
+    transition: .2s ease;
 }
 
-#character-create-submit:hover,
-.character-action:hover {
-
+#character-create-submit:hover {
     filter: brightness(1.13);
-
     transform: translateY(-2px);
-
-    box-shadow:
-        0 7px 25px rgba(217, 179, 110, .2);
 }
 
-#character-create-submit:disabled,
-.character-action:disabled {
-
+#character-create-submit:disabled {
     opacity: .5;
     cursor: not-allowed;
     transform: none;
@@ -400,7 +653,6 @@
 
 #character-back,
 .character-secondary {
-
     display: block;
 
     width: min(100%, 700px);
@@ -425,7 +677,6 @@
 
 #character-back:hover,
 .character-secondary:hover {
-
     color: var(--character-gold-light);
 
     border-color: var(--character-gold);
@@ -438,7 +689,6 @@
 ========================================= */
 
 #account-panel {
-
     width: min(94%, 750px);
 
     min-height: auto;
@@ -464,7 +714,6 @@
 }
 
 #account-panel > h2 {
-
     color: var(--character-gold-light);
 
     text-align: center;
@@ -475,7 +724,6 @@
 }
 
 #account-forms {
-
     display: grid;
 
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -488,7 +736,6 @@
 #login-form,
 #register-form,
 #account-profile {
-
     min-width: 0;
 
     padding: 22px;
@@ -501,7 +748,6 @@
 }
 
 #account-panel h3 {
-
     color: var(--character-gold);
 
     font-size: 17px;
@@ -510,12 +756,10 @@
 }
 
 #account-panel input {
-
     width: 100%;
     min-height: 45px;
 
     margin: 10px 0;
-
     padding: 12px;
 
     box-sizing: border-box;
@@ -530,7 +774,6 @@
 }
 
 #account-panel input:focus {
-
     border-color: var(--character-gold);
 
     box-shadow:
@@ -538,12 +781,10 @@
 }
 
 #account-profile {
-
     text-align: center;
 }
 
 #account-profile p {
-
     color: var(--character-muted);
     font-family: Arial, sans-serif;
 }
@@ -577,10 +818,8 @@
 
     #character-list,
     .character-list {
-        grid-template-columns: repeat(
-            auto-fit,
-            minmax(180px, 1fr)
-        );
+        grid-template-columns:
+            repeat(auto-fit, minmax(210px, 1fr));
     }
 
     #account-forms {
@@ -610,10 +849,31 @@
         gap: 12px;
     }
 
+    .character-card {
+        grid-template-columns: 75px 1fr;
+        gap: 10px 13px;
+
+        padding: 15px;
+    }
+
+    .character-avatar {
+        width: 75px;
+        height: 100px;
+    }
+
+    .character-avatar-initial {
+        font-size: 32px;
+    }
+
+    .character-name {
+        font-size: 17px;
+    }
+
     #character-form,
     .character-form {
         grid-template-columns: 1fr;
         gap: 12px;
+
         padding: 17px;
     }
 
@@ -656,4 +916,4 @@
         font-size: 19px;
     }
 
-}
+   }
