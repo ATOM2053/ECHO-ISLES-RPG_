@@ -1,7 +1,8 @@
 /* =========================================
    ECHO ISLES RPG
    PIXEL WORLD RENDERER
-   Version: 3.0.0
+   Version: 4.0.0
+   COLLISION SYSTEM
 ========================================= */
 
 "use strict";
@@ -13,14 +14,28 @@ window.ECHO_WORLD_RENDERER = (() => {
     // ======================================
 
     const CONFIG = {
+
         mapImage: "/assets/maps/starting-village.png",
+
         mapWidth: 1672,
         mapHeight: 941,
+
         characterWidth: 32,
-        characterHeight: 40
+        characterHeight: 40,
+
+        collisionRadius: 7,
+
+        // เปิดระบบตรวจจับสีจากภาพแผนที่
+        autoCollision: true,
+
+        // พื้นที่สิ่งกีดขวางเพิ่มเติม
+        // รูปแบบ: { x, y, width, height }
+        obstacles: []
+
     };
 
     const COLORS = {
+
         playerSkin: "#f2d28a",
         playerHair: "#593c2b",
         playerClothes: "#28639b",
@@ -30,6 +45,7 @@ window.ECHO_WORLD_RENDERER = (() => {
         remoteHair: "#354b76",
         remoteClothes: "#4679bd",
         remoteDark: "#294b79"
+
     };
 
     // ======================================
@@ -45,6 +61,10 @@ window.ECHO_WORLD_RENDERER = (() => {
     let mapImage = new Image();
     let mapLoaded = false;
     let mapError = false;
+
+    let collisionCanvas = null;
+    let collisionContext = null;
+    let collisionPixels = null;
 
     let player = {
         id: null,
@@ -89,6 +109,193 @@ window.ECHO_WORLD_RENDERER = (() => {
         const game = getGame();
 
         return game?.player?.id || player.id || null;
+
+    }
+
+    // ======================================
+    // COLLISION MAP
+    // ======================================
+
+    function buildCollisionMap() {
+
+        if (!mapLoaded) {
+            return false;
+        }
+
+        collisionCanvas = document.createElement("canvas");
+
+        collisionCanvas.width = CONFIG.mapWidth;
+        collisionCanvas.height = CONFIG.mapHeight;
+
+        collisionContext = collisionCanvas.getContext("2d", {
+            willReadFrequently: true
+        });
+
+        collisionContext.drawImage(
+            mapImage,
+            0,
+            0,
+            CONFIG.mapWidth,
+            CONFIG.mapHeight
+        );
+
+        try {
+
+            collisionPixels = collisionContext.getImageData(
+                0,
+                0,
+                CONFIG.mapWidth,
+                CONFIG.mapHeight
+            ).data;
+
+        } catch (error) {
+
+            console.error(
+                "[COLLISION] Cannot read map pixels:",
+                error
+            );
+
+            collisionPixels = null;
+            return false;
+
+        }
+
+        console.log("[COLLISION] Collision map created");
+
+        return true;
+
+    }
+
+    // ======================================
+    // PIXEL COLLISION DETECTION
+    // ======================================
+
+    function isBlockedByColor(x, y) {
+
+        if (!CONFIG.autoCollision || !collisionPixels) {
+            return false;
+        }
+
+        const px = Math.floor(x);
+        const py = Math.floor(y);
+
+        if (
+            px < 0 ||
+            py < 0 ||
+            px >= CONFIG.mapWidth ||
+            py >= CONFIG.mapHeight
+        ) {
+            return true;
+        }
+
+        const index = (
+            py * CONFIG.mapWidth + px
+        ) * 4;
+
+        const r = collisionPixels[index];
+        const g = collisionPixels[index + 1];
+        const b = collisionPixels[index + 2];
+
+        // น้ำ: สีน้ำเงินเด่น
+        const isWater =
+            b > 75 &&
+            b > r * 1.12 &&
+            b > g * 1.08;
+
+        // พื้นที่สีเขียวเข้ม เช่น พุ่มไม้บางชนิด
+        const isDarkVegetation =
+            g > r * 1.15 &&
+            g > b * 1.05 &&
+            g < 150;
+
+        // หลังคาสีแดงหรือสีน้ำตาลแดง
+        const isRoof =
+            r > 100 &&
+            r > g * 1.2 &&
+            r > b * 1.15 &&
+            g < 150;
+
+        // พื้นที่มืดมาก
+        const isDarkObject =
+            r < 35 &&
+            g < 35 &&
+            b < 35;
+
+        return (
+            isWater ||
+            isDarkVegetation ||
+            isRoof ||
+            isDarkObject
+        );
+
+    }
+
+    // ======================================
+    // MANUAL OBSTACLES
+    // ======================================
+
+    function isBlockedByObstacle(x, y) {
+
+        return CONFIG.obstacles.some(obstacle => {
+
+            return (
+                x >= obstacle.x &&
+                x <= obstacle.x + obstacle.width &&
+                y >= obstacle.y &&
+                y <= obstacle.y + obstacle.height
+            );
+
+        });
+
+    }
+
+    // ======================================
+    // CHECK WALKABLE POSITION
+    // ======================================
+
+    function canMoveTo(x, y) {
+
+        if (!Number.isFinite(x) || !Number.isFinite(y)) {
+            return false;
+        }
+
+        const radius = CONFIG.collisionRadius;
+
+        // ตรวจสอบขอบเขตแผนที่
+        if (
+            x - radius < 0 ||
+            y - radius < 0 ||
+            x + radius >= CONFIG.mapWidth ||
+            y + radius >= CONFIG.mapHeight
+        ) {
+            return false;
+        }
+
+        // ตรวจสอบพื้นที่สิ่งกีดขวาง
+        const points = [
+
+            [x - radius, y],
+            [x + radius, y],
+            [x, y - radius],
+            [x, y + radius],
+            [x, y]
+
+        ];
+
+        for (const [px, py] of points) {
+
+            if (isBlockedByObstacle(px, py)) {
+                return false;
+            }
+
+            if (isBlockedByColor(px, py)) {
+                return false;
+            }
+
+        }
+
+        return true;
+
     }
 
     // ======================================
@@ -104,13 +311,19 @@ window.ECHO_WORLD_RENDERER = (() => {
                 mapLoaded = true;
                 mapError = false;
 
+                CONFIG.mapWidth = mapImage.naturalWidth;
+                CONFIG.mapHeight = mapImage.naturalHeight;
+
+                buildCollisionMap();
+
                 console.log(
                     "[WORLD RENDERER] Map loaded",
-                    mapImage.width,
-                    mapImage.height
+                    CONFIG.mapWidth,
+                    CONFIG.mapHeight
                 );
 
                 resolve(true);
+
             };
 
             mapImage.onerror = () => {
@@ -124,6 +337,7 @@ window.ECHO_WORLD_RENDERER = (() => {
                 );
 
                 resolve(false);
+
             };
 
             mapImage.src = CONFIG.mapImage;
@@ -200,6 +414,7 @@ window.ECHO_WORLD_RENDERER = (() => {
             );
 
             return;
+
         }
 
         ctx.imageSmoothingEnabled = false;
@@ -436,8 +651,7 @@ window.ECHO_WORLD_RENDERER = (() => {
             ctx.textAlign = "center";
             ctx.textBaseline = "middle";
 
-            const width =
-                ctx.measureText(label).width;
+            const width = ctx.measureText(label).width;
 
             ctx.fillStyle = "rgba(0,0,0,0.75)";
 
@@ -558,20 +772,13 @@ window.ECHO_WORLD_RENDERER = (() => {
 
         if (mapLoaded) {
 
-            drawRemotePlayers(
-                camera,
-                timestamp
-            );
+            drawRemotePlayers(camera, timestamp);
 
-            drawLocalPlayer(
-                camera,
-                timestamp
-            );
+            drawLocalPlayer(camera, timestamp);
 
         }
 
-        animationFrame =
-            requestAnimationFrame(render);
+        animationFrame = requestAnimationFrame(render);
 
     }
 
@@ -581,9 +788,7 @@ window.ECHO_WORLD_RENDERER = (() => {
 
     function init() {
 
-        canvas = document.getElementById(
-            "game-canvas"
-        );
+        canvas = document.getElementById("game-canvas");
 
         if (!canvas) {
 
@@ -592,6 +797,7 @@ window.ECHO_WORLD_RENDERER = (() => {
             );
 
             return false;
+
         }
 
         ctx = canvas.getContext("2d");
@@ -630,9 +836,7 @@ window.ECHO_WORLD_RENDERER = (() => {
 
         render();
 
-        console.log(
-            "[WORLD RENDERER] Started"
-        );
+        console.log("[WORLD RENDERER] Started");
 
         return true;
 
@@ -648,17 +852,13 @@ window.ECHO_WORLD_RENDERER = (() => {
 
         if (animationFrame !== null) {
 
-            cancelAnimationFrame(
-                animationFrame
-            );
+            cancelAnimationFrame(animationFrame);
 
             animationFrame = null;
 
         }
 
-        console.log(
-            "[WORLD RENDERER] Stopped"
-        );
+        console.log("[WORLD RENDERER] Stopped");
 
     }
 
@@ -668,13 +868,29 @@ window.ECHO_WORLD_RENDERER = (() => {
 
     function updatePlayer(data = {}) {
 
-        if (Number.isFinite(Number(data.x))) {
-            player.x = Number(data.x);
+        const nextX = Number.isFinite(Number(data.x))
+            ? Number(data.x)
+            : player.x;
+
+        const nextY = Number.isFinite(Number(data.y))
+            ? Number(data.y)
+            : player.y;
+
+        // ตรวจสอบตำแหน่งใหม่ก่อนเปลี่ยนตำแหน่ง
+        if (
+            mapLoaded &&
+            collisionPixels &&
+            !canMoveTo(nextX, nextY)
+        ) {
+
+            player.moving = false;
+
+            return false;
+
         }
 
-        if (Number.isFinite(Number(data.y))) {
-            player.y = Number(data.y);
-        }
+        player.x = nextX;
+        player.y = nextY;
 
         if (data.name) {
             player.name = data.name;
@@ -691,6 +907,8 @@ window.ECHO_WORLD_RENDERER = (() => {
         if (typeof data.moving === "boolean") {
             player.moving = data.moving;
         }
+
+        return true;
 
     }
 
@@ -745,6 +963,8 @@ window.ECHO_WORLD_RENDERER = (() => {
         updateRemotePlayer,
         removeRemotePlayer,
 
+        canMoveTo,
+
         get player() {
             return { ...player };
         },
@@ -755,6 +975,10 @@ window.ECHO_WORLD_RENDERER = (() => {
 
         get mapLoaded() {
             return mapLoaded;
+        },
+
+        get collisionReady() {
+            return !!collisionPixels;
         }
 
     };
