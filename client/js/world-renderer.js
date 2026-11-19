@@ -1,7 +1,7 @@
 /* =========================================
    ECHO ISLES RPG
    PIXEL WORLD RENDERER
-   Version: 2.0.0
+   Version: 3.0.0
 ========================================= */
 
 "use strict";
@@ -12,42 +12,24 @@ window.ECHO_WORLD_RENDERER = (() => {
     // CONFIGURATION
     // ======================================
 
-    const TILE_SIZE = 32;
+    const CONFIG = {
+        mapImage: "/assets/maps/starting-village.png",
+        mapWidth: 1672,
+        mapHeight: 941,
+        characterWidth: 32,
+        characterHeight: 40
+    };
 
     const COLORS = {
-        grass: "#477c43",
-        grassDark: "#3c6d39",
-        grassLight: "#568c4c",
-
-        path: "#9b8057",
-        pathDark: "#806746",
-        pathLight: "#b29669",
-
-        water: "#326f9b",
-        waterLight: "#4b91b5",
-        waterDark: "#245779",
-
-        tree: "#285333",
-        treeLight: "#3e7545",
-        treeDark: "#193c29",
-
-        trunk: "#795333",
-
         playerSkin: "#f2d28a",
         playerHair: "#593c2b",
-        playerClothes: "#a96b45",
+        playerClothes: "#28639b",
         playerDark: "#75452f",
 
         remoteSkin: "#8ac8ff",
         remoteHair: "#354b76",
         remoteClothes: "#4679bd",
-
-        text: "#ffffff"
-    };
-
-    const WORLD = {
-        mapName: "starting_village",
-        renderDistance: 2
+        remoteDark: "#294b79"
     };
 
     // ======================================
@@ -57,10 +39,12 @@ window.ECHO_WORLD_RENDERER = (() => {
     let canvas = null;
     let ctx = null;
 
-    let animationFrame = null;
     let running = false;
+    let animationFrame = null;
 
-    let lastFrameTime = 0;
+    let mapImage = new Image();
+    let mapLoaded = false;
+    let mapError = false;
 
     let player = {
         id: null,
@@ -72,7 +56,7 @@ window.ECHO_WORLD_RENDERER = (() => {
     };
 
     // ======================================
-    // HELPERS
+    // GAME DATA
     // ======================================
 
     function getGame() {
@@ -83,7 +67,7 @@ window.ECHO_WORLD_RENDERER = (() => {
 
         const game = getGame();
 
-        if (!game || !game.world) {
+        if (!game?.world?.players) {
             return [];
         }
 
@@ -97,380 +81,92 @@ window.ECHO_WORLD_RENDERER = (() => {
             return players;
         }
 
-        if (players && typeof players === "object") {
-            return Object.values(players);
-        }
-
-        return [];
+        return Object.values(players);
     }
 
     function getLocalPlayerId() {
 
         const game = getGame();
 
-        return game?.player?.id ||
-            player.id ||
-            null;
-    }
-
-    function isRemotePlayer(item) {
-
-        if (!item || typeof item !== "object") {
-            return false;
-        }
-
-        const localId = getLocalPlayerId();
-
-        if (localId && item.id === localId) {
-            return false;
-        }
-
-        return (
-            Number.isFinite(Number(item.x)) &&
-            Number.isFinite(Number(item.y))
-        );
-    }
-
-    function random(x, y) {
-
-        let value =
-            Math.sin(x * 127.1 + y * 311.7) *
-            43758.5453;
-
-        return value - Math.floor(value);
+        return game?.player?.id || player.id || null;
     }
 
     // ======================================
-    // MAP GENERATION
+    // LOAD MAP IMAGE
     // ======================================
 
-    function getTileType(x, y) {
+    function loadMap() {
 
-        // Lake
+        return new Promise(resolve => {
 
-        if (
-            x >= 4 &&
-            x <= 7 &&
-            y >= 4 &&
-            y <= 7
-        ) {
-            return "water";
-        }
+            mapImage.onload = () => {
 
-        // Main road
+                mapLoaded = true;
+                mapError = false;
 
-        if (
-            Math.abs(x - 15) <= 1 ||
-            Math.abs(y - 15) <= 1
-        ) {
-            return "path";
-        }
+                console.log(
+                    "[WORLD RENDERER] Map loaded",
+                    mapImage.width,
+                    mapImage.height
+                );
 
-        // Diagonal road
+                resolve(true);
+            };
 
-        if (Math.abs(x - y) <= 1) {
-            return "path";
-        }
+            mapImage.onerror = () => {
 
-        // Trees
+                mapLoaded = false;
+                mapError = true;
 
-        if (random(x, y) > 0.88) {
-            return "tree";
-        }
+                console.error(
+                    "[WORLD RENDERER] Cannot load map:",
+                    CONFIG.mapImage
+                );
 
-        return "grass";
-    }
+                resolve(false);
+            };
 
-    // ======================================
-    // DRAW GRASS
-    // ======================================
+            mapImage.src = CONFIG.mapImage;
 
-    function drawGrass(px, py, x, y) {
-
-        ctx.fillStyle = COLORS.grass;
-
-        ctx.fillRect(
-            px,
-            py,
-            TILE_SIZE,
-            TILE_SIZE
-        );
-
-        const value = random(x, y);
-
-        if (value > 0.5) {
-
-            ctx.fillStyle = COLORS.grassLight;
-
-            ctx.fillRect(
-                px + 7,
-                py + 8,
-                3,
-                3
-            );
-
-            ctx.fillRect(
-                px + 21,
-                py + 20,
-                2,
-                2
-            );
-
-        }
-
-        if (value < 0.3) {
-
-            ctx.fillStyle = COLORS.grassDark;
-
-            ctx.fillRect(
-                px + 18,
-                py + 7,
-                4,
-                3
-            );
-
-        }
+        });
 
     }
 
     // ======================================
-    // DRAW PATH
+    // CAMERA
     // ======================================
 
-    function drawPath(px, py, x, y) {
+    function getCamera() {
 
-        ctx.fillStyle = COLORS.path;
-
-        ctx.fillRect(
-            px,
-            py,
-            TILE_SIZE,
-            TILE_SIZE
+        const maxX = Math.max(
+            0,
+            CONFIG.mapWidth - canvas.width
         );
 
-        const value = random(x, y);
-
-        ctx.fillStyle = COLORS.pathDark;
-
-        if (value > 0.5) {
-
-            ctx.fillRect(
-                px + 5,
-                py + 8,
-                5,
-                3
-            );
-
-        }
-
-        ctx.fillStyle = COLORS.pathLight;
-
-        if (value < 0.35) {
-
-            ctx.fillRect(
-                px + 20,
-                py + 22,
-                4,
-                3
-            );
-
-        }
-
-    }
-
-    // ======================================
-    // DRAW WATER
-    // ======================================
-
-    function drawWater(px, py, x, y, time) {
-
-        ctx.fillStyle = COLORS.water;
-
-        ctx.fillRect(
-            px,
-            py,
-            TILE_SIZE,
-            TILE_SIZE
+        const maxY = Math.max(
+            0,
+            CONFIG.mapHeight - canvas.height
         );
 
-        ctx.fillStyle = COLORS.waterDark;
+        return {
 
-        ctx.fillRect(
-            px,
-            py + 26,
-            TILE_SIZE,
-            6
-        );
+            x: Math.max(
+                0,
+                Math.min(
+                    player.x - canvas.width / 2,
+                    maxX
+                )
+            ),
 
-        const wave =
-            Math.floor(time / 500) % 2;
+            y: Math.max(
+                0,
+                Math.min(
+                    player.y - canvas.height / 2,
+                    maxY
+                )
+            )
 
-        ctx.fillStyle = COLORS.waterLight;
-
-        ctx.fillRect(
-            px + 5 + wave * 2,
-            py + 10,
-            12,
-            3
-        );
-
-        ctx.fillRect(
-            px + 19 - wave * 2,
-            py + 21,
-            8,
-            2
-        );
-
-    }
-
-    // ======================================
-    // DRAW TREE
-    // ======================================
-
-    function drawTree(px, py) {
-
-        // Ground
-
-        ctx.fillStyle = COLORS.grass;
-
-        ctx.fillRect(
-            px,
-            py,
-            TILE_SIZE,
-            TILE_SIZE
-        );
-
-        // Shadow
-
-        ctx.fillStyle = "rgba(0,0,0,0.28)";
-
-        ctx.fillRect(
-            px + 4,
-            py + 22,
-            25,
-            7
-        );
-
-        // Trunk
-
-        ctx.fillStyle = COLORS.trunk;
-
-        ctx.fillRect(
-            px + 13,
-            py + 18,
-            7,
-            13
-        );
-
-        // Leaves
-
-        ctx.fillStyle = COLORS.treeDark;
-
-        ctx.fillRect(
-            px + 8,
-            py + 7,
-            17,
-            17
-        );
-
-        ctx.fillRect(
-            px + 4,
-            py + 12,
-            24,
-            11
-        );
-
-        ctx.fillStyle = COLORS.tree;
-
-        ctx.fillRect(
-            px + 8,
-            py + 5,
-            17,
-            15
-        );
-
-        ctx.fillRect(
-            px + 3,
-            py + 10,
-            26,
-            10
-        );
-
-        // Light
-
-        ctx.fillStyle = COLORS.treeLight;
-
-        ctx.fillRect(
-            px + 10,
-            py + 7,
-            7,
-            6
-        );
-
-        ctx.fillRect(
-            px + 5,
-            py + 12,
-            5,
-            4
-        );
-
-    }
-
-    // ======================================
-    // DRAW TILE
-    // ======================================
-
-    function drawTile(
-        type,
-        screenX,
-        screenY,
-        worldX,
-        worldY,
-        time
-    ) {
-
-        if (type === "grass") {
-
-            drawGrass(
-                screenX,
-                screenY,
-                worldX,
-                worldY
-            );
-
-        }
-
-        else if (type === "path") {
-
-            drawPath(
-                screenX,
-                screenY,
-                worldX,
-                worldY
-            );
-
-        }
-
-        else if (type === "water") {
-
-            drawWater(
-                screenX,
-                screenY,
-                worldX,
-                worldY,
-                time
-            );
-
-        }
-
-        else if (type === "tree") {
-
-            drawTree(
-                screenX,
-                screenY
-            );
-
-        }
+        };
 
     }
 
@@ -478,78 +174,61 @@ window.ECHO_WORLD_RENDERER = (() => {
     // DRAW MAP
     // ======================================
 
-    function drawMap(time) {
+    function drawMap(camera) {
 
-        if (!ctx || !canvas) {
-            return null;
-        }
+        ctx.fillStyle = "#101b24";
 
-        const cameraX =
-            player.x - canvas.width / 2;
-
-        const cameraY =
-            player.y - canvas.height / 2;
-
-        const startX = Math.floor(
-            cameraX / TILE_SIZE
+        ctx.fillRect(
+            0,
+            0,
+            canvas.width,
+            canvas.height
         );
 
-        const startY = Math.floor(
-            cameraY / TILE_SIZE
-        );
+        if (!mapLoaded) {
 
-        const endX = startX +
-            Math.ceil(canvas.width / TILE_SIZE) + 1;
+            ctx.fillStyle = "#ffffff";
+            ctx.font = "16px Arial";
+            ctx.textAlign = "center";
 
-        const endY = startY +
-            Math.ceil(canvas.height / TILE_SIZE) + 1;
+            ctx.fillText(
+                mapError
+                    ? "Unable to load village map"
+                    : "Loading Starting Village...",
+                canvas.width / 2,
+                canvas.height / 2
+            );
 
-        for (let y = startY; y <= endY; y++) {
-
-            for (let x = startX; x <= endX; x++) {
-
-                // แปลงพิกัดโลกเป็นพิกัดหน้าจอ
-
-                const screenX =
-                    x * TILE_SIZE - cameraX;
-
-                const screenY =
-                    y * TILE_SIZE - cameraY;
-
-                const type = getTileType(x, y);
-
-                drawTile(
-                    type,
-                    Math.floor(screenX),
-                    Math.floor(screenY),
-                    x,
-                    y,
-                    time
-                );
-
-            }
-
+            return;
         }
 
-        return {
-            cameraX,
-            cameraY
-        };
+        ctx.imageSmoothingEnabled = false;
+
+        ctx.drawImage(
+            mapImage,
+            -camera.x,
+            -camera.y
+        );
 
     }
 
     // ======================================
-    // PIXEL CHARACTER
+    // DRAW CHARACTER
     // ======================================
 
-    function drawPixelCharacter(
-        screenX,
-        screenY,
+    function drawCharacter(
+        x,
+        y,
+        name,
         isLocal,
         direction,
         moving,
+        camera,
         time
     ) {
+
+        const screenX = Math.floor(x - camera.x);
+        const screenY = Math.floor(y - camera.y);
 
         const skin = isLocal
             ? COLORS.playerSkin
@@ -567,26 +246,17 @@ window.ECHO_WORLD_RENDERER = (() => {
             ? COLORS.playerDark
             : COLORS.remoteDark;
 
-        // Walking animation
-
         const frame = moving
-            ? Math.floor(time / 140) % 2
+            ? Math.floor(time / 150) % 2
             : 0;
-
-        const legOffset = frame === 0 ? 0 : 2;
-
-        // Pixel alignment
-
-        const x = Math.floor(screenX);
-        const y = Math.floor(screenY);
 
         // Shadow
 
-        ctx.fillStyle = "rgba(0,0,0,0.35)";
+        ctx.fillStyle = "rgba(0,0,0,0.4)";
 
         ctx.fillRect(
-            x - 11,
-            y - 2,
+            screenX - 11,
+            screenY - 3,
             22,
             6
         );
@@ -596,17 +266,17 @@ window.ECHO_WORLD_RENDERER = (() => {
         ctx.fillStyle = dark;
 
         ctx.fillRect(
-            x - 7,
-            y - 10,
+            screenX - 7,
+            screenY - 11,
             5,
-            9 + legOffset
+            9 + frame * 2
         );
 
         ctx.fillRect(
-            x + 2,
-            y - 10,
+            screenX + 2,
+            screenY - 11,
             5,
-            9 + (frame === 0 ? 2 : 0)
+            9 + (1 - frame) * 2
         );
 
         // Boots
@@ -614,15 +284,15 @@ window.ECHO_WORLD_RENDERER = (() => {
         ctx.fillStyle = "#302b2a";
 
         ctx.fillRect(
-            x - 8,
-            y - 3 + legOffset,
+            screenX - 8,
+            screenY - 3,
             6,
             3
         );
 
         ctx.fillRect(
-            x + 2,
-            y - 3 + (frame === 0 ? 2 : 0),
+            screenX + 2,
+            screenY - 3,
             7,
             3
         );
@@ -632,19 +302,30 @@ window.ECHO_WORLD_RENDERER = (() => {
         ctx.fillStyle = dark;
 
         ctx.fillRect(
-            x - 8,
-            y - 23,
+            screenX - 8,
+            screenY - 24,
             16,
-            14
+            15
         );
 
         ctx.fillStyle = clothes;
 
         ctx.fillRect(
-            x - 7,
-            y - 22,
+            screenX - 7,
+            screenY - 23,
             14,
-            11
+            12
+        );
+
+        // Blue scarf
+
+        ctx.fillStyle = "#28639b";
+
+        ctx.fillRect(
+            screenX - 6,
+            screenY - 23,
+            12,
+            4
         );
 
         // Arms
@@ -652,15 +333,15 @@ window.ECHO_WORLD_RENDERER = (() => {
         ctx.fillStyle = skin;
 
         ctx.fillRect(
-            x - 10,
-            y - 21,
+            screenX - 10,
+            screenY - 21,
             3,
             9
         );
 
         ctx.fillRect(
-            x + 7,
-            y - 21,
+            screenX + 7,
+            screenY - 21,
             3,
             9
         );
@@ -670,10 +351,10 @@ window.ECHO_WORLD_RENDERER = (() => {
         ctx.fillStyle = skin;
 
         ctx.fillRect(
-            x - 7,
-            y - 34,
+            screenX - 7,
+            screenY - 36,
             14,
-            12
+            13
         );
 
         // Hair
@@ -681,165 +362,103 @@ window.ECHO_WORLD_RENDERER = (() => {
         ctx.fillStyle = hair;
 
         ctx.fillRect(
-            x - 8,
-            y - 36,
+            screenX - 8,
+            screenY - 38,
             16,
-            6
+            7
         );
 
         ctx.fillRect(
-            x - 7,
-            y - 31,
+            screenX - 7,
+            screenY - 32,
             3,
             5
         );
 
         ctx.fillRect(
-            x + 4,
-            y - 31,
+            screenX + 4,
+            screenY - 32,
             3,
             5
         );
 
-        // Face direction
+        // Face
 
-        ctx.fillStyle = "#292929";
+        if (direction !== "up") {
 
-        if (direction === "left") {
+            ctx.fillStyle = "#292929";
 
-            ctx.fillRect(
-                x - 4,
-                y - 28,
-                2,
-                2
-            );
+            if (direction === "left") {
 
-        }
+                ctx.fillRect(
+                    screenX - 4,
+                    screenY - 30,
+                    2,
+                    2
+                );
 
-        else if (direction === "right") {
+            } else if (direction === "right") {
 
-            ctx.fillRect(
-                x + 2,
-                y - 28,
-                2,
-                2
-            );
+                ctx.fillRect(
+                    screenX + 2,
+                    screenY - 30,
+                    2,
+                    2
+                );
 
-        }
+            } else {
 
-        else if (direction === "up") {
+                ctx.fillRect(
+                    screenX - 4,
+                    screenY - 30,
+                    2,
+                    2
+                );
 
-            ctx.fillStyle = hair;
+                ctx.fillRect(
+                    screenX + 2,
+                    screenY - 30,
+                    2,
+                    2
+                );
 
-            ctx.fillRect(
-                x - 5,
-                y - 32,
-                10,
-                5
-            );
-
-        }
-
-        else {
-
-            ctx.fillRect(
-                x - 4,
-                y - 28,
-                2,
-                2
-            );
-
-            ctx.fillRect(
-                x + 2,
-                y - 28,
-                2,
-                2
-            );
+            }
 
         }
 
-    }
+        // Player name
 
-    // ======================================
-    // DRAW PLAYER NAME
-    // ======================================
+        if (name) {
 
-    function drawPlayerName(
-        screenX,
-        screenY,
-        name,
-        isLocal
-    ) {
+            const label = String(name).slice(0, 20);
 
-        if (!name) return;
+            ctx.font = "12px Arial";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
 
-        const label = String(name).slice(0, 20);
+            const width =
+                ctx.measureText(label).width;
 
-        ctx.font = "12px Arial";
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
+            ctx.fillStyle = "rgba(0,0,0,0.75)";
 
-        const width =
-            ctx.measureText(label).width;
+            ctx.fillRect(
+                screenX - width / 2 - 5,
+                screenY - 55,
+                width + 10,
+                16
+            );
 
-        const x = Math.floor(screenX);
-        const y = Math.floor(screenY - 47);
+            ctx.fillStyle = isLocal
+                ? "#ffe39b"
+                : "#ffffff";
 
-        ctx.fillStyle = "rgba(0,0,0,0.72)";
+            ctx.fillText(
+                label,
+                screenX,
+                screenY - 47
+            );
 
-        ctx.fillRect(
-            x - width / 2 - 5,
-            y - 8,
-            width + 10,
-            16
-        );
-
-        ctx.fillStyle = isLocal
-            ? "#ffe39b"
-            : COLORS.text;
-
-        ctx.fillText(
-            label,
-            x,
-            y
-        );
-
-    }
-
-    // ======================================
-    // DRAW CHARACTER
-    // ======================================
-
-    function drawCharacter(
-        x,
-        y,
-        name,
-        isLocal,
-        direction,
-        moving,
-        cameraX,
-        cameraY,
-        time
-    ) {
-
-        const screenX = x - cameraX;
-        const screenY = y - cameraY;
-
-        drawPixelCharacter(
-            screenX,
-            screenY,
-            isLocal,
-            direction || "down",
-            moving,
-            time
-        );
-
-        drawPlayerName(
-            screenX,
-            screenY,
-            name,
-            isLocal
-        );
+        }
 
     }
 
@@ -847,11 +466,7 @@ window.ECHO_WORLD_RENDERER = (() => {
     // DRAW LOCAL PLAYER
     // ======================================
 
-    function drawLocalPlayer(
-        cameraX,
-        cameraY,
-        time
-    ) {
+    function drawLocalPlayer(camera, time) {
 
         drawCharacter(
             player.x,
@@ -860,8 +475,7 @@ window.ECHO_WORLD_RENDERER = (() => {
             true,
             player.direction,
             player.moving,
-            cameraX,
-            cameraY,
+            camera,
             time
         );
 
@@ -871,25 +485,28 @@ window.ECHO_WORLD_RENDERER = (() => {
     // DRAW REMOTE PLAYERS
     // ======================================
 
-    function drawRemotePlayers(
-        cameraX,
-        cameraY,
-        time
-    ) {
+    function drawRemotePlayers(camera, time) {
 
-        const remotePlayers = getRemotePlayers();
+        const localId = getLocalPlayerId();
 
-        for (const remote of remotePlayers) {
+        const game = getGame();
 
-            if (!isRemotePlayer(remote)) {
+        const localMap =
+            game?.player?.map ||
+            game?.player?.map_id;
+
+        for (const remote of getRemotePlayers()) {
+
+            if (!remote || remote.id === localId) {
                 continue;
             }
 
-            const game = getGame();
-
-            const localMap =
-                game?.player?.map ||
-                game?.player?.map_id;
+            if (
+                !Number.isFinite(Number(remote.x)) ||
+                !Number.isFinite(Number(remote.y))
+            ) {
+                continue;
+            }
 
             const remoteMap =
                 remote.map ||
@@ -910,8 +527,7 @@ window.ECHO_WORLD_RENDERER = (() => {
                 false,
                 remote.direction || "down",
                 remote.moving === true,
-                cameraX,
-                cameraY,
+                camera,
                 time
             );
 
@@ -920,16 +536,14 @@ window.ECHO_WORLD_RENDERER = (() => {
     }
 
     // ======================================
-    // RENDER FRAME
+    // RENDER
     // ======================================
 
     function render(timestamp = 0) {
 
-        if (!ctx || !canvas || !running) {
+        if (!running || !ctx || !canvas) {
             return;
         }
-
-        lastFrameTime = timestamp;
 
         ctx.clearRect(
             0,
@@ -938,19 +552,19 @@ window.ECHO_WORLD_RENDERER = (() => {
             canvas.height
         );
 
-        const camera = drawMap(timestamp);
+        const camera = getCamera();
 
-        if (camera) {
+        drawMap(camera);
+
+        if (mapLoaded) {
 
             drawRemotePlayers(
-                camera.cameraX,
-                camera.cameraY,
+                camera,
                 timestamp
             );
 
             drawLocalPlayer(
-                camera.cameraX,
-                camera.cameraY,
+                camera,
                 timestamp
             );
 
@@ -978,22 +592,17 @@ window.ECHO_WORLD_RENDERER = (() => {
             );
 
             return false;
-
         }
 
         ctx = canvas.getContext("2d");
 
         if (!ctx) {
-
-            console.error(
-                "[WORLD RENDERER] Canvas context unavailable"
-            );
-
             return false;
-
         }
 
         ctx.imageSmoothingEnabled = false;
+
+        loadMap();
 
         return true;
 
@@ -1059,15 +668,11 @@ window.ECHO_WORLD_RENDERER = (() => {
 
     function updatePlayer(data = {}) {
 
-        if (
-            Number.isFinite(Number(data.x))
-        ) {
+        if (Number.isFinite(Number(data.x))) {
             player.x = Number(data.x);
         }
 
-        if (
-            Number.isFinite(Number(data.y))
-        ) {
+        if (Number.isFinite(Number(data.y))) {
             player.y = Number(data.y);
         }
 
@@ -1120,9 +725,7 @@ window.ECHO_WORLD_RENDERER = (() => {
 
         const game = getGame();
 
-        if (
-            game?.world?.players instanceof Map
-        ) {
+        if (game?.world?.players instanceof Map) {
             game.world.players.delete(playerId);
         }
 
@@ -1148,6 +751,10 @@ window.ECHO_WORLD_RENDERER = (() => {
 
         get running() {
             return running;
+        },
+
+        get mapLoaded() {
+            return mapLoaded;
         }
 
     };
