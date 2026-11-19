@@ -1,7 +1,7 @@
 /* =========================================
    ECHO ISLES RPG
    MAIN GAME CONTROLLER
-   Version: 0.7.0
+   Version: 0.8.0
 ========================================= */
 
 "use strict";
@@ -205,7 +205,8 @@
                                 remote.id,
                                 {
                                     ...remote,
-                                    moving: false
+                                    moving: false,
+                                    movementTimer: null
                                 }
                             );
 
@@ -246,7 +247,8 @@
                         remote.id,
                         {
                             ...remote,
-                            moving: false
+                            moving: false,
+                            movementTimer: null
                         }
                     );
 
@@ -265,7 +267,7 @@
 
                     if (!data?.id) return;
 
-                    // Local player
+                    // LOCAL PLAYER
 
                     if (data.id === GAME.player.id) {
 
@@ -280,7 +282,7 @@
 
                     }
 
-                    // Remote player
+                    // REMOTE PLAYER
 
                     const previous =
                         GAME.world.players.get(data.id);
@@ -292,7 +294,19 @@
                     const updated = {
                         ...previous,
                         ...data,
-                        moving: true
+
+                        direction: [
+                            "up",
+                            "down",
+                            "left",
+                            "right"
+                        ].includes(data.direction)
+                            ? data.direction
+                            : previous.direction,
+
+                        moving: typeof data.moving === "boolean"
+                            ? data.moving
+                            : false
                     };
 
                     GAME.world.players.set(
@@ -301,28 +315,6 @@
                     );
 
                     GAME.syncRenderer();
-
-                    // Remote movement timeout
-
-                    clearTimeout(updated.movementTimer);
-
-                    updated.movementTimer = setTimeout(() => {
-
-                        const current =
-                            GAME.world.players.get(data.id);
-
-                        if (!current) return;
-
-                        current.moving = false;
-
-                        GAME.world.players.set(
-                            data.id,
-                            current
-                        );
-
-                        GAME.syncRenderer();
-
-                    }, 250);
 
                 });
 
@@ -457,6 +449,8 @@
 
             stop() {
 
+                const wasMoving = GAME.player.moving;
+
                 if (this.animationFrame !== null) {
 
                     cancelAnimationFrame(
@@ -478,6 +472,10 @@
                 this.joystickActive = false;
 
                 GAME.player.moving = false;
+
+                if (wasMoving) {
+                    this.sendPosition();
+                }
 
                 GAME.syncRenderer();
 
@@ -575,6 +573,9 @@
                     Math.abs(x) > 0.01 ||
                     Math.abs(y) > 0.01;
 
+                const wasMoving =
+                    GAME.player.moving;
+
                 GAME.player.moving = isMoving;
 
                 if (isMoving) {
@@ -622,13 +623,19 @@
 
                     }
 
-                } else {
+                } else if (wasMoving) {
 
-                    // Update renderer only when movement stops
+                    // PLAYER STOPPED
 
-                    if (GAME.player.moving !== false) {
-                        GAME.syncRenderer();
-                    }
+                    GAME.player.moving = false;
+
+                    GAME.syncRenderer();
+
+                    // แจ้งเซิร์ฟเวอร์ว่าหยุดเดิน
+
+                    this.sendPosition();
+
+                    this.lastNetworkUpdate = time;
 
                 }
 
@@ -650,7 +657,9 @@
 
                     x: GAME.player.x,
                     y: GAME.player.y,
+
                     direction: GAME.player.direction,
+
                     moving: GAME.player.moving
 
                 });
@@ -670,7 +679,7 @@
 
             if (!renderer) return;
 
-            // Local player
+            // LOCAL PLAYER
 
             renderer.updatePlayer({
 
@@ -687,7 +696,7 @@
 
             });
 
-            // Remote players
+            // REMOTE PLAYERS
 
             GAME.world.players.forEach(remote => {
 
@@ -751,6 +760,9 @@
                                 moving: false
                             };
 
+                            this.movement.lastDirection =
+                                this.player.direction || "down";
+
                         }
 
                         this.world.currentMap =
@@ -772,7 +784,8 @@
                                         remote.id,
                                         {
                                             ...remote,
-                                            moving: false
+                                            moving: false,
+                                            movementTimer: null
                                         }
                                     );
 
