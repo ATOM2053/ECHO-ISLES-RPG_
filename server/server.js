@@ -1,7 +1,8 @@
 /* =========================================
    ECHO ISLES RPG
    GAME SERVER
-   Version: 0.4.0
+   Version: 0.5.0
+   SERVER MOVEMENT VALIDATION
 ========================================= */
 
 "use strict";
@@ -63,7 +64,7 @@ app.get("/api/status", (req, res) => {
     res.json({
         success: true,
         game: "ECHO ISLES RPG",
-        version: "0.4.0",
+        version: "0.5.0",
         status: "online",
         timestamp: new Date().toISOString()
     });
@@ -92,12 +93,27 @@ const players = new Map();
 // ==========================================
 
 const MOVEMENT = {
+
+    // Starting Village: 1672 x 941
+
     minX: 0,
     minY: 0,
-    maxX: 10000,
-    maxY: 10000,
 
-    maxDistancePerUpdate: 100,
+    maxX: 1672,
+    maxY: 941,
+
+    // Maximum legitimate movement speed.
+    // Client movement speed is currently 180.
+
+    maxSpeed: 240,
+
+    // Small allowance for network timing variation.
+
+    distanceTolerance: 12,
+
+    // Maximum elapsed time used in speed calculation.
+
+    maxElapsedTime: 2000,
 
     directions: [
         "up",
@@ -105,7 +121,49 @@ const MOVEMENT = {
         "left",
         "right"
     ]
+
 };
+
+// ==========================================
+// POSITION VALIDATION
+// ==========================================
+
+function isValidPosition(x, y) {
+
+    return (
+        Number.isFinite(x) &&
+        Number.isFinite(y) &&
+        x >= MOVEMENT.minX &&
+        y >= MOVEMENT.minY &&
+        x <= MOVEMENT.maxX &&
+        y <= MOVEMENT.maxY
+    );
+
+}
+
+// ==========================================
+// MOVEMENT SPEED VALIDATION
+// ==========================================
+
+function canPlayerMove(player, x, y, now) {
+
+    const dx = x - player.x;
+    const dy = y - player.y;
+
+    const distance = Math.hypot(dx, dy);
+
+    const elapsed = Math.min(
+        Math.max(now - player.lastMoveAt, 0),
+        MOVEMENT.maxElapsedTime
+    );
+
+    const allowedDistance =
+        MOVEMENT.maxSpeed * (elapsed / 1000) +
+        MOVEMENT.distanceTolerance;
+
+    return distance <= allowedDistance;
+
+}
 
 // ==========================================
 // SOCKET AUTHENTICATION
@@ -228,8 +286,30 @@ io.on("connection", (socket) => {
                 });
             }
 
-            const x = Number(character.position_x);
-            const y = Number(character.position_y);
+            // LOAD CHARACTER POSITION
+
+            let x = Number(character.position_x);
+            let y = Number(character.position_y);
+
+            if (!Number.isFinite(x)) {
+                x = 400;
+            }
+
+            if (!Number.isFinite(y)) {
+                y = 300;
+            }
+
+            // Keep position inside the map.
+
+            x = Math.max(
+                MOVEMENT.minX,
+                Math.min(MOVEMENT.maxX, x)
+            );
+
+            y = Math.max(
+                MOVEMENT.minY,
+                Math.min(MOVEMENT.maxY, y)
+            );
 
             const player = {
 
@@ -248,13 +328,17 @@ io.on("connection", (socket) => {
                 mp: character.mp,
                 gold: character.gold,
 
-                x: Number.isFinite(x) ? x : 400,
-                y: Number.isFinite(y) ? y : 300,
+                x,
+                y,
 
                 map: character.map_id || "starting_village",
 
                 direction: "down",
-                moving: false
+                moving: false,
+
+                // Movement validation timestamp.
+
+                lastMoveAt: Date.now()
 
             };
 
@@ -264,13 +348,18 @@ io.on("connection", (socket) => {
 
             socket.join(player.map);
 
-            const remotePlayers = Array.from(players.values())
-                .filter(item =>
-                    item.map === player.map &&
-                    item.id !== socket.id
-                );
+            const remotePlayers =
+                Array.from(players.values())
+                    .filter(item =>
+                        item.map === player.map &&
+                        item.id !== socket.id
+                    )
+                    .map(item => ({
+                        ...item,
+                        lastMoveAt: undefined
+                    }));
 
-            // ส่งข้อมูลโลกให้ผู้เล่น
+            // SEND WORLD DATA
 
             respond({
                 success: true,
@@ -283,11 +372,14 @@ io.on("connection", (socket) => {
                 players: remotePlayers
             });
 
-            // แจ้งผู้เล่นอื่นว่ามีผู้เล่นใหม่เข้ามา
+            // NOTIFY OTHER PLAYERS
 
             socket.to(player.map).emit(
                 "player:joined",
-                player
+                {
+                    ...player,
+                    lastMoveAt: undefined
+                }
             );
 
             console.log(
@@ -320,50 +412,54 @@ io.on("connection", (socket) => {
             return;
         }
 
+        // POSITION
+
         const x = Number(data.x);
         const y = Number(data.y);
 
-        // ตรวจสอบตำแหน่ง
+        if (!isValidPosition(x, y)) {
+            return;
+        }
+
+        // DIRECTION
+
+        const direction =
+            MOVEMENT.directions.includes(data.direction)
+                ? data.direction
+                : activePlayer.direction;
+
+        // MOVING STATE
+
+        if (typeof data.moving !== "boolean") {
+            return;
+        }
+
+        const moving = data.moving;
+
+        // MOVEMENT SPEED VALIDATION
+
+        const now = Date.now();
 
         if (
-            !Number.isFinite(x) ||
-            !Number.isFinite(y) ||
-            x < MOVEMENT.minX ||
-            y < MOVEMENT.minY ||
-            x > MOVEMENT.maxX ||
-            y > MOVEMENT.maxY
+            !canPlayerMove(
+                activePlayer,
+                x,
+                y,
+                now
+            )
         ) {
+
+            console.warn(
+                `[MOVEMENT BLOCKED] ${activePlayer.name}`
+            );
+
             return;
+
         }
 
-        // ตรวจสอบทิศทาง
-
-        const direction = MOVEMENT.directions.includes(
-            data.direction
-        )
-            ? data.direction
-            : activePlayer.direction;
-
-        // ตรวจสอบสถานะการเดิน
-
-        const moving = typeof data.moving === "boolean"
-            ? data.moving
-            : activePlayer.moving;
-
-        // ตรวจสอบระยะทางที่เคลื่อนที่
-
-        const dx = x - activePlayer.x;
-        const dy = y - activePlayer.y;
-
-        const distance = Math.sqrt(
-            dx * dx + dy * dy
-        );
-
-        if (distance > MOVEMENT.maxDistancePerUpdate) {
-            return;
-        }
-
-        // อัปเดตข้อมูลผู้เล่น
+        // ==================================
+        // UPDATE AUTHORITATIVE POSITION
+        // ==================================
 
         activePlayer.x = x;
         activePlayer.y = y;
@@ -371,11 +467,16 @@ io.on("connection", (socket) => {
         activePlayer.direction = direction;
         activePlayer.moving = moving;
 
-        // ส่งข้อมูลไปยังผู้เล่นทั้งหมดในแผนที่เดียวกัน
+        activePlayer.lastMoveAt = now;
+
+        // ==================================
+        // BROADCAST TO MAP PLAYERS
+        // ==================================
 
         io.to(activePlayer.map).emit(
             "player:moved",
             {
+
                 id: socket.id,
 
                 x: activePlayer.x,
@@ -383,6 +484,7 @@ io.on("connection", (socket) => {
 
                 direction: activePlayer.direction,
                 moving: activePlayer.moving
+
             }
         );
 
@@ -417,10 +519,15 @@ io.on("connection", (socket) => {
         io.to(activePlayer.map).emit(
             "chat:message",
             {
+
                 id: socket.id,
+
                 name: activePlayer.name,
+
                 message,
+
                 timestamp: Date.now()
+
             }
         );
 
@@ -544,7 +651,9 @@ server.listen(PORT, async () => {
 
         } else {
 
-            console.error("[DATABASE] DATABASE_URL missing");
+            console.error(
+                "[DATABASE] DATABASE_URL missing"
+            );
 
         }
 
@@ -583,7 +692,9 @@ async function shutdown(signal) {
 
             await closeDatabase();
 
-            console.log("[SERVER] Shutdown complete");
+            console.log(
+                "[SERVER] Shutdown complete"
+            );
 
             process.exit(0);
 
@@ -611,4 +722,5 @@ async function shutdown(signal) {
 }
 
 process.on("SIGTERM", () => shutdown("SIGTERM"));
+
 process.on("SIGINT", () => shutdown("SIGINT"));
