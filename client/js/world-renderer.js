@@ -1,8 +1,16 @@
 /* =========================================
    ECHO ISLES RPG
-   PIXEL WORLD RENDERER
-   Version: 4.0.0
-   COLLISION SYSTEM
+   PROCEDURAL WORLD RENDERER
+   Version: 6.0.0
+
+   FEATURES:
+   - Procedural Pixel World
+   - Tile Map
+   - Collision System
+   - Depth Sorting
+   - Camera System
+   - Multiplayer Rendering
+   - Pixel Perfect
 ========================================= */
 
 "use strict";
@@ -15,772 +23,1874 @@ window.ECHO_WORLD_RENDERER = (() => {
 
     const CONFIG = {
 
-        mapImage: "/assets/maps/starting-village.png",
+        VERSION: "6.0.0",
 
-        mapWidth: 1672,
-        mapHeight: 941,
+        TILE_SIZE: 16,
 
-        characterWidth: 32,
-        characterHeight: 40,
+        MAP_WIDTH: 100,
+        MAP_HEIGHT: 60,
 
-        collisionRadius: 7,
+        VIEW_WIDTH: 320,
+        VIEW_HEIGHT: 180,
 
-        // เปิดระบบตรวจจับสีจากภาพแผนที่
-        autoCollision: true,
+        PLAYER_WIDTH: 16,
+        PLAYER_HEIGHT: 24,
 
-        // พื้นที่สิ่งกีดขวางเพิ่มเติม
-        // รูปแบบ: { x, y, width, height }
-        obstacles: []
+        PLAYER_SPEED: 180,
 
-    };
+        CAMERA_SMOOTHING: 0.15,
 
-    const COLORS = {
+        SEED: 20261119,
 
-        playerSkin: "#f2d28a",
-        playerHair: "#593c2b",
-        playerClothes: "#28639b",
-        playerDark: "#75452f",
-
-        remoteSkin: "#8ac8ff",
-        remoteHair: "#354b76",
-        remoteClothes: "#4679bd",
-        remoteDark: "#294b79"
+        BACKGROUND: "#243b32"
 
     };
+
 
     // ======================================
-    // STATE
+    // CANVAS
     // ======================================
 
     let canvas = null;
     let ctx = null;
 
+    let initialized = false;
     let running = false;
+
     let animationFrame = null;
 
-    let mapImage = new Image();
-    let mapLoaded = false;
-    let mapError = false;
+    let lastFrame = 0;
 
-    let collisionCanvas = null;
-    let collisionContext = null;
-    let collisionPixels = null;
 
-    let player = {
-        id: null,
-        x: 400,
-        y: 300,
-        name: "Player",
-        direction: "down",
-        moving: false
+    // ======================================
+    // WORLD DATA
+    // ======================================
+
+    const world = {
+
+        width:
+            CONFIG.MAP_WIDTH * CONFIG.TILE_SIZE,
+
+        height:
+            CONFIG.MAP_HEIGHT * CONFIG.TILE_SIZE,
+
+        tiles: [],
+
+        objects: [],
+
+        collision: [],
+
+        generated: false
+
     };
 
-    // ======================================
-    // GAME DATA
-    // ======================================
-
-    function getGame() {
-        return window.ECHO_GAME || null;
-    }
-
-    function getRemotePlayers() {
-
-        const game = getGame();
-
-        if (!game?.world?.players) {
-            return [];
-        }
-
-        const players = game.world.players;
-
-        if (players instanceof Map) {
-            return Array.from(players.values());
-        }
-
-        if (Array.isArray(players)) {
-            return players;
-        }
-
-        return Object.values(players);
-    }
-
-    function getLocalPlayerId() {
-
-        const game = getGame();
-
-        return game?.player?.id || player.id || null;
-
-    }
-
-    // ======================================
-    // COLLISION MAP
-    // ======================================
-
-    function buildCollisionMap() {
-
-        if (!mapLoaded) {
-            return false;
-        }
-
-        collisionCanvas = document.createElement("canvas");
-
-        collisionCanvas.width = CONFIG.mapWidth;
-        collisionCanvas.height = CONFIG.mapHeight;
-
-        collisionContext = collisionCanvas.getContext("2d", {
-            willReadFrequently: true
-        });
-
-        collisionContext.drawImage(
-            mapImage,
-            0,
-            0,
-            CONFIG.mapWidth,
-            CONFIG.mapHeight
-        );
-
-        try {
-
-            collisionPixels = collisionContext.getImageData(
-                0,
-                0,
-                CONFIG.mapWidth,
-                CONFIG.mapHeight
-            ).data;
-
-        } catch (error) {
-
-            console.error(
-                "[COLLISION] Cannot read map pixels:",
-                error
-            );
-
-            collisionPixels = null;
-            return false;
-
-        }
-
-        console.log("[COLLISION] Collision map created");
-
-        return true;
-
-    }
-
-    // ======================================
-    // PIXEL COLLISION DETECTION
-    // ======================================
-
-    function isBlockedByColor(x, y) {
-
-        if (!CONFIG.autoCollision || !collisionPixels) {
-            return false;
-        }
-
-        const px = Math.floor(x);
-        const py = Math.floor(y);
-
-        if (
-            px < 0 ||
-            py < 0 ||
-            px >= CONFIG.mapWidth ||
-            py >= CONFIG.mapHeight
-        ) {
-            return true;
-        }
-
-        const index = (
-            py * CONFIG.mapWidth + px
-        ) * 4;
-
-        const r = collisionPixels[index];
-        const g = collisionPixels[index + 1];
-        const b = collisionPixels[index + 2];
-
-        // น้ำ: สีน้ำเงินเด่น
-        const isWater =
-            b > 75 &&
-            b > r * 1.12 &&
-            b > g * 1.08;
-
-        // พื้นที่สีเขียวเข้ม เช่น พุ่มไม้บางชนิด
-        const isDarkVegetation =
-            g > r * 1.15 &&
-            g > b * 1.05 &&
-            g < 150;
-
-        // หลังคาสีแดงหรือสีน้ำตาลแดง
-        const isRoof =
-            r > 100 &&
-            r > g * 1.2 &&
-            r > b * 1.15 &&
-            g < 150;
-
-        // พื้นที่มืดมาก
-        const isDarkObject =
-            r < 35 &&
-            g < 35 &&
-            b < 35;
-
-        return (
-            isWater ||
-            isDarkVegetation ||
-            isRoof ||
-            isDarkObject
-        );
-
-    }
-
-    // ======================================
-    // MANUAL OBSTACLES
-    // ======================================
-
-    function isBlockedByObstacle(x, y) {
-
-        return CONFIG.obstacles.some(obstacle => {
-
-            return (
-                x >= obstacle.x &&
-                x <= obstacle.x + obstacle.width &&
-                y >= obstacle.y &&
-                y <= obstacle.y + obstacle.height
-            );
-
-        });
-
-    }
-
-    // ======================================
-    // CHECK WALKABLE POSITION
-    // ======================================
-
-    function canMoveTo(x, y) {
-
-        if (!Number.isFinite(x) || !Number.isFinite(y)) {
-            return false;
-        }
-
-        const radius = CONFIG.collisionRadius;
-
-        // ตรวจสอบขอบเขตแผนที่
-        if (
-            x - radius < 0 ||
-            y - radius < 0 ||
-            x + radius >= CONFIG.mapWidth ||
-            y + radius >= CONFIG.mapHeight
-        ) {
-            return false;
-        }
-
-        // ตรวจสอบพื้นที่สิ่งกีดขวาง
-        const points = [
-
-            [x - radius, y],
-            [x + radius, y],
-            [x, y - radius],
-            [x, y + radius],
-            [x, y]
-
-        ];
-
-        for (const [px, py] of points) {
-
-            if (isBlockedByObstacle(px, py)) {
-                return false;
-            }
-
-            if (isBlockedByColor(px, py)) {
-                return false;
-            }
-
-        }
-
-        return true;
-
-    }
-
-    // ======================================
-    // LOAD MAP IMAGE
-    // ======================================
-
-    function loadMap() {
-
-        return new Promise(resolve => {
-
-            mapImage.onload = () => {
-
-                mapLoaded = true;
-                mapError = false;
-
-                CONFIG.mapWidth = mapImage.naturalWidth;
-                CONFIG.mapHeight = mapImage.naturalHeight;
-
-                buildCollisionMap();
-
-                console.log(
-                    "[WORLD RENDERER] Map loaded",
-                    CONFIG.mapWidth,
-                    CONFIG.mapHeight
-                );
-
-                resolve(true);
-
-            };
-
-            mapImage.onerror = () => {
-
-                mapLoaded = false;
-                mapError = true;
-
-                console.error(
-                    "[WORLD RENDERER] Cannot load map:",
-                    CONFIG.mapImage
-                );
-
-                resolve(false);
-
-            };
-
-            mapImage.src = CONFIG.mapImage;
-
-        });
-
-    }
 
     // ======================================
     // CAMERA
     // ======================================
 
-    function getCamera() {
+    const camera = {
 
-        const maxX = Math.max(
-            0,
-            CONFIG.mapWidth - canvas.width
-        );
+        x: 0,
+        y: 0,
 
-        const maxY = Math.max(
-            0,
-            CONFIG.mapHeight - canvas.height
-        );
+        targetX: 0,
+        targetY: 0
 
-        return {
+    };
 
-            x: Math.max(
-                0,
-                Math.min(
-                    player.x - canvas.width / 2,
-                    maxX
-                )
-            ),
 
-            y: Math.max(
-                0,
-                Math.min(
-                    player.y - canvas.height / 2,
-                    maxY
-                )
-            )
+    // ======================================
+    // PLAYER
+    // ======================================
 
-        };
+    const player = {
+
+        id: null,
+
+        x: 400,
+        y: 300,
+
+        width: CONFIG.PLAYER_WIDTH,
+        height: CONFIG.PLAYER_HEIGHT,
+
+        direction: "down",
+
+        moving: false,
+
+        name: "Adventurer"
+
+    };
+
+
+    // ======================================
+    // REMOTE PLAYERS
+    // ======================================
+
+    const remotePlayers = new Map();
+
+
+    // ======================================
+    // COLORS
+    // ======================================
+
+    const COLORS = {
+
+        grass: [
+            "#466f45",
+            "#4b7548",
+            "#507b4b",
+            "#426a42"
+        ],
+
+        grassDetail: [
+            "#608c50",
+            "#355d3b",
+            "#75965a"
+        ],
+
+        dirt: "#92724d",
+
+        dirtLight: "#ad8960",
+
+        water: "#326b91",
+
+        waterLight: "#4788a8",
+
+        waterDark: "#234f73",
+
+        wood: "#765039",
+
+        woodDark: "#4c352b",
+
+        roof: "#754b45",
+
+        roofDark: "#543634",
+
+        stone: "#777d7c",
+
+        stoneDark: "#4d5656",
+
+        leaves: [
+            "#285b3e",
+            "#326b43",
+            "#3d7848",
+            "#4b8250"
+        ],
+
+        gold: "#e4c47b"
+
+    };
+
+
+    // ======================================
+    // SEEDED RANDOM
+    // ======================================
+
+    let randomSeed = CONFIG.SEED;
+
+    function random() {
+
+        randomSeed =
+            (randomSeed * 1664525 + 1013904223) %
+            4294967296;
+
+        return randomSeed / 4294967296;
 
     }
+
+
+    function randomInt(min, max) {
+
+        return Math.floor(
+            random() * (max - min + 1)
+        ) + min;
+
+    }
+
+
+    // ======================================
+    // HELPERS
+    // ======================================
+
+    function clamp(value, min, max) {
+
+        return Math.max(
+            min,
+            Math.min(max, value)
+        );
+
+    }
+
+
+    function tileIndex(x, y) {
+
+        return y * CONFIG.MAP_WIDTH + x;
+
+    }
+
+
+    function inBounds(x, y) {
+
+        return (
+            x >= 0 &&
+            y >= 0 &&
+            x < CONFIG.MAP_WIDTH &&
+            y < CONFIG.MAP_HEIGHT
+        );
+
+    }
+
+
+    function tileAt(x, y) {
+
+        if (!inBounds(x, y)) {
+            return "water";
+        }
+
+        return world.tiles[tileIndex(x, y)];
+
+    }
+
+
+    function setTile(x, y, type) {
+
+        if (!inBounds(x, y)) return;
+
+        world.tiles[tileIndex(x, y)] = type;
+
+    }
+
+
+    // ======================================
+    // DRAW PIXEL RECTANGLE
+    // ======================================
+
+    function rect(x, y, width, height, color) {
+
+        ctx.fillStyle = color;
+
+        ctx.fillRect(
+            Math.floor(x),
+            Math.floor(y),
+            Math.ceil(width),
+            Math.ceil(height)
+        );
+
+    }
+
+
+    // ======================================
+    // MAP GENERATION
+    // ======================================
+
+    function generateWorld() {
+
+        randomSeed = CONFIG.SEED;
+
+        world.tiles = [];
+        world.objects = [];
+        world.collision = [];
+
+        world.generated = false;
+
+        // BASE GRASS
+
+        for (
+            let y = 0;
+            y < CONFIG.MAP_HEIGHT;
+            y++
+        ) {
+
+            for (
+                let x = 0;
+                x < CONFIG.MAP_WIDTH;
+                x++
+            ) {
+
+                world.tiles.push(
+                    COLORS.grass[
+                        randomInt(0, COLORS.grass.length - 1)
+                    ]
+                );
+
+            }
+
+        }
+
+
+        // RIVER
+
+        generateRiver();
+
+
+        // VILLAGE AREA
+
+        generateVillage();
+
+
+        // ROADS
+
+        generateRoads();
+
+
+        // NATURAL OBJECTS
+
+        generateTrees();
+
+        generateRocks();
+
+        generateBushes();
+
+
+        // DECORATION
+
+        generateGrassDetails();
+
+
+        world.generated = true;
+
+        console.log(
+            "[WORLD] Generated:",
+            world.width,
+            world.height
+        );
+
+    }
+
+
+    // ======================================
+    // RIVER
+    // ======================================
+
+    function generateRiver() {
+
+        let riverX = 76;
+
+        for (
+            let y = 0;
+            y < CONFIG.MAP_HEIGHT;
+            y++
+        ) {
+
+            riverX += randomInt(-1, 1);
+
+            riverX = clamp(
+                riverX,
+                67,
+                84
+            );
+
+            for (
+                let offset = -2;
+                offset <= 2;
+                offset++
+            ) {
+
+                setTile(
+                    riverX + offset,
+                    y,
+                    "water"
+                );
+
+            }
+
+        }
+
+    }
+
+
+    // ======================================
+    // VILLAGE
+    // ======================================
+
+    function generateVillage() {
+
+        // Village clearing
+
+        for (let y = 12; y <= 43; y++) {
+
+            for (let x = 12; x <= 43; x++) {
+
+                const dx = x - 27;
+                const dy = y - 27;
+
+                const distance =
+                    Math.sqrt(dx * dx + dy * dy);
+
+                if (distance < 18) {
+
+                    setTile(x, y, "grass");
+
+                }
+
+            }
+
+        }
+
+
+        // Houses
+
+        addHouse(17, 17, 5, 4);
+
+        addHouse(32, 18, 5, 4);
+
+        addHouse(17, 34, 5, 4);
+
+        addHouse(32, 34, 5, 4);
+
+
+        // Village well
+
+        addObject({
+
+            type: "well",
+
+            x: 27 * 16,
+            y: 27 * 16,
+
+            width: 24,
+            height: 22,
+
+            solid: true
+
+        });
+
+
+        // Village sign
+
+        addObject({
+
+            type: "sign",
+
+            x: 28 * 16,
+            y: 22 * 16,
+
+            width: 12,
+            height: 16,
+
+            solid: true
+
+        });
+
+    }
+
+
+    // ======================================
+    // ROADS
+    // ======================================
+
+    function generateRoads() {
+
+        // Main horizontal road
+
+        for (let x = 5; x < 67; x++) {
+
+            for (let y = 26; y <= 28; y++) {
+
+                setTile(x, y, "dirt");
+
+            }
+
+        }
+
+
+        // Vertical village road
+
+        for (let y = 10; y < 48; y++) {
+
+            for (let x = 26; x <= 28; x++) {
+
+                setTile(x, y, "dirt");
+
+            }
+
+        }
+
+
+        // Road to river
+
+        for (let x = 40; x < 74; x++) {
+
+            setTile(x, 27, "dirt");
+
+            setTile(x, 28, "dirt");
+
+        }
+
+
+        // Bridge
+
+        addObject({
+
+            type: "bridge",
+
+            x: 72 * 16,
+            y: 25 * 16,
+
+            width: 48,
+            height: 64,
+
+            solid: false
+
+        });
+
+    }
+
+
+    // ======================================
+    // HOUSE GENERATION
+    // ======================================
+
+    function addHouse(tx, ty, width, height) {
+
+        const x = tx * 16;
+        const y = ty * 16;
+
+        const w = width * 16;
+        const h = height * 16;
+
+        addObject({
+
+            type: "house",
+
+            x,
+            y,
+
+            width: w,
+            height: h,
+
+            solid: true
+
+        });
+
+    }
+
+
+    // ======================================
+    // ADD OBJECT
+    // ======================================
+
+    function addObject(object) {
+
+        object.id =
+            "object_" + world.objects.length;
+
+        world.objects.push(object);
+
+        if (object.solid) {
+
+            world.collision.push({
+
+                x: object.x,
+                y: object.y,
+
+                width: object.width,
+                height: object.height,
+
+                type: object.type
+
+            });
+
+        }
+
+    }
+
+
+    // ======================================
+    // TREES
+    // ======================================
+
+    function generateTrees() {
+
+        for (let i = 0; i < 170; i++) {
+
+            const tx = randomInt(2, 97);
+            const ty = randomInt(2, 57);
+
+            // Keep village open
+
+            if (
+                tx >= 12 &&
+                tx <= 43 &&
+                ty >= 12 &&
+                ty <= 43
+            ) {
+                continue;
+            }
+
+            // Keep river clear
+
+            if (tileAt(tx, ty) === "water") {
+                continue;
+            }
+
+            addObject({
+
+                type: "tree",
+
+                x: tx * 16,
+                y: ty * 16,
+
+                width: 24,
+                height: 32,
+
+                solid: true
+
+            });
+
+        }
+
+    }
+
+
+    // ======================================
+    // ROCKS
+    // ======================================
+
+    function generateRocks() {
+
+        for (let i = 0; i < 65; i++) {
+
+            const tx = randomInt(2, 97);
+            const ty = randomInt(2, 57);
+
+            if (tileAt(tx, ty) === "water") {
+                continue;
+            }
+
+            if (
+                tx >= 12 &&
+                tx <= 43 &&
+                ty >= 12 &&
+                ty <= 43
+            ) {
+                continue;
+            }
+
+            addObject({
+
+                type: "rock",
+
+                x: tx * 16,
+                y: ty * 16,
+
+                width: 16,
+                height: 12,
+
+                solid: true
+
+            });
+
+        }
+
+    }
+
+
+    // ======================================
+    // BUSHES
+    // ======================================
+
+    function generateBushes() {
+
+        for (let i = 0; i < 100; i++) {
+
+            const tx = randomInt(2, 97);
+            const ty = randomInt(2, 57);
+
+            if (tileAt(tx, ty) === "water") {
+                continue;
+            }
+
+            if (
+                tx >= 12 &&
+                tx <= 43 &&
+                ty >= 12 &&
+                ty <= 43
+            ) {
+                continue;
+            }
+
+            addObject({
+
+                type: "bush",
+
+                x: tx * 16,
+                y: ty * 16,
+
+                width: 16,
+                height: 12,
+
+                solid: true
+
+            });
+
+        }
+
+    }
+
+
+    // ======================================
+    // GRASS DETAILS
+    // ======================================
+
+    function generateGrassDetails() {
+
+        for (let i = 0; i < 550; i++) {
+
+            const tx = randomInt(0, 99);
+            const ty = randomInt(0, 59);
+
+            if (tileAt(tx, ty) === "water") {
+                continue;
+            }
+
+            addObject({
+
+                type: "grass_detail",
+
+                x: tx * 16 + randomInt(1, 12),
+                y: ty * 16 + randomInt(1, 12),
+
+                width: 3,
+                height: 4,
+
+                solid: false
+
+            });
+
+        }
+
+    }
+
+
+    // ======================================
+    // DRAW TILE
+    // ======================================
+
+    function drawTile(type, x, y) {
+
+        if (type === "water") {
+
+            rect(x, y, 16, 16, COLORS.water);
+
+            rect(
+                x + 3,
+                y + 4,
+                5,
+                1,
+                COLORS.waterLight
+            );
+
+            rect(
+                x + 10,
+                y + 11,
+                4,
+                1,
+                COLORS.waterDark
+            );
+
+            return;
+
+        }
+
+
+        if (type === "dirt") {
+
+            rect(x, y, 16, 16, COLORS.dirt);
+
+            rect(
+                x + 3,
+                y + 5,
+                3,
+                2,
+                COLORS.dirtLight
+            );
+
+            rect(
+                x + 10,
+                y + 12,
+                2,
+                1,
+                COLORS.wood
+            );
+
+            return;
+
+        }
+
+
+        rect(x, y, 16, 16, type);
+
+    }
+
+
+    // ======================================
+    // DRAW TREE
+    // ======================================
+
+    function drawTree(object) {
+
+        const x = object.x;
+        const y = object.y;
+
+        // Shadow
+
+        rect(
+            x + 2,
+            y + 24,
+            20,
+            6,
+            "rgba(0,0,0,0.25)"
+        );
+
+        // Trunk
+
+        rect(
+            x + 9,
+            y + 17,
+            7,
+            13,
+            COLORS.wood
+        );
+
+        rect(
+            x + 11,
+            y + 18,
+            2,
+            10,
+            COLORS.woodDark
+        );
+
+        // Leaves
+
+        const leaf =
+            COLORS.leaves[
+                Math.abs(
+                    Math.floor(x + y)
+                ) % COLORS.leaves.length
+            ];
+
+        rect(x + 4, y + 5, 16, 15, leaf);
+
+        rect(x + 1, y + 10, 22, 9, leaf);
+
+        rect(x + 7, y + 1, 12, 10, leaf);
+
+        rect(x + 6, y + 7, 5, 4, "#6b9959");
+
+        rect(x + 15, y + 12, 4, 3, "#285b3e");
+
+    }
+
+
+    // ======================================
+    // DRAW ROCK
+    // ======================================
+
+    function drawRock(object) {
+
+        const x = object.x;
+        const y = object.y;
+
+        rect(
+            x + 2,
+            y + 8,
+            12,
+            4,
+            "rgba(0,0,0,0.25)"
+        );
+
+        rect(
+            x + 2,
+            y + 4,
+            12,
+            7,
+            COLORS.stone
+        );
+
+        rect(
+            x + 5,
+            y + 1,
+            7,
+            8,
+            COLORS.stone
+        );
+
+        rect(
+            x + 5,
+            y + 3,
+            4,
+            2,
+            "#a1a8a2"
+        );
+
+        rect(
+            x + 11,
+            y + 6,
+            2,
+            3,
+            COLORS.stoneDark
+        );
+
+    }
+
+
+    // ======================================
+    // DRAW BUSH
+    // ======================================
+
+    function drawBush(object) {
+
+        const x = object.x;
+        const y = object.y;
+
+        rect(
+            x + 2,
+            y + 7,
+            12,
+            5,
+            "#285b3e"
+        );
+
+        rect(
+            x + 4,
+            y + 3,
+            8,
+            7,
+            "#3d7848"
+        );
+
+        rect(
+            x + 5,
+            y + 4,
+            3,
+            2,
+            "#79a85b"
+        );
+
+    }
+
+
+    // ======================================
+    // DRAW HOUSE
+    // ======================================
+
+    function drawHouse(object) {
+
+        const x = object.x;
+        const y = object.y;
+
+        const w = object.width;
+        const h = object.height;
+
+        // Shadow
+
+        rect(
+            x - 2,
+            y + h - 3,
+            w + 5,
+            8,
+            "rgba(0,0,0,0.25)"
+        );
+
+        // Wall
+
+        rect(
+            x + 3,
+            y + 17,
+            w - 6,
+            h - 17,
+            "#c49a6c"
+        );
+
+        rect(
+            x + 5,
+            y + 20,
+            w - 10,
+            h - 23,
+            "#d4ad7d"
+        );
+
+        // Roof
+
+        rect(
+            x,
+            y + 7,
+            w,
+            15,
+            COLORS.roof
+        );
+
+        rect(
+            x + 4,
+            y + 1,
+            w - 8,
+            10,
+            COLORS.roof
+        );
+
+        rect(
+            x + 2,
+            y + 8,
+            w - 4,
+            3,
+            COLORS.roofDark
+        );
+
+        // Door
+
+        rect(
+            x + w / 2 - 4,
+            y + h - 18,
+            9,
+            18,
+            COLORS.woodDark
+        );
+
+        rect(
+            x + w / 2 - 2,
+            y + h - 15,
+            5,
+            12,
+            COLORS.wood
+        );
+
+        // Window
+
+        rect(
+            x + 8,
+            y + 25,
+            9,
+            9,
+            "#315d78"
+        );
+
+        rect(
+            x + 9,
+            y + 26,
+            7,
+            7,
+            "#76a9bd"
+        );
+
+        rect(
+            x + 12,
+            y + 26,
+            1,
+            7,
+            COLORS.woodDark
+        );
+
+    }
+
+
+    // ======================================
+    // DRAW WELL
+    // ======================================
+
+    function drawWell(object) {
+
+        const x = object.x;
+        const y = object.y;
+
+        rect(
+            x + 2,
+            y + 15,
+            22,
+            5,
+            "rgba(0,0,0,0.25)"
+        );
+
+        rect(
+            x + 3,
+            y + 7,
+            18,
+            13,
+            COLORS.stone
+        );
+
+        rect(
+            x + 5,
+            y + 9,
+            14,
+            9,
+            "#315f75"
+        );
+
+        rect(
+            x + 2,
+            y + 5,
+            22,
+            4,
+            "#a6aaa0"
+        );
+
+        rect(
+            x + 5,
+            y + 2,
+            2,
+            5,
+            COLORS.wood
+        );
+
+        rect(
+            x + 17,
+            y + 2,
+            2,
+            5,
+            COLORS.wood
+        );
+
+    }
+
+
+    // ======================================
+    // DRAW SIGN
+    // ======================================
+
+    function drawSign(object) {
+
+        const x = object.x;
+        const y = object.y;
+
+        rect(
+            x + 5,
+            y + 8,
+            3,
+            8,
+            COLORS.woodDark
+        );
+
+        rect(
+            x,
+            y + 2,
+            13,
+            7,
+            COLORS.wood
+        );
+
+        rect(
+            x + 2,
+            y + 4,
+            9,
+            2,
+            COLORS.gold
+        );
+
+    }
+
+
+    // ======================================
+    // DRAW BRIDGE
+    // ======================================
+
+    function drawBridge(object) {
+
+        const x = object.x;
+        const y = object.y;
+
+        rect(
+            x + 3,
+            y,
+            object.width - 6,
+            object.height,
+            "#69462f"
+        );
+
+        for (
+            let i = 0;
+            i < object.height;
+            i += 8
+        ) {
+
+            rect(
+                x + 3,
+                y + i,
+                object.width - 6,
+                2,
+                "#b18a5e"
+            );
+
+        }
+
+        rect(
+            x,
+            y,
+            4,
+            object.height,
+            "#4b3528"
+        );
+
+        rect(
+            x + object.width - 4,
+            y,
+            4,
+            object.height,
+            "#4b3528"
+        );
+
+    }
+
+
+    // ======================================
+    // DRAW GRASS DETAIL
+    // ======================================
+
+    function drawGrassDetail(object) {
+
+        rect(
+            object.x,
+            object.y,
+            2,
+            3,
+            "#9ab56a"
+        );
+
+    }
+
+
+    // ======================================
+    // DRAW OBJECT
+    // ======================================
+
+    function drawObject(object) {
+
+        switch (object.type) {
+
+            case "tree":
+                drawTree(object);
+                break;
+
+            case "rock":
+                drawRock(object);
+                break;
+
+            case "bush":
+                drawBush(object);
+                break;
+
+            case "house":
+                drawHouse(object);
+                break;
+
+            case "well":
+                drawWell(object);
+                break;
+
+            case "sign":
+                drawSign(object);
+                break;
+
+            case "bridge":
+                drawBridge(object);
+                break;
+
+            case "grass_detail":
+                drawGrassDetail(object);
+                break;
+
+        }
+
+    }
+
+
+    // ======================================
+    // COLLISION SYSTEM
+    // ======================================
+
+    function canMoveTo(x, y) {
+
+        if (
+            !Number.isFinite(x) ||
+            !Number.isFinite(y)
+        ) {
+            return false;
+        }
+
+        const halfWidth =
+            CONFIG.PLAYER_WIDTH / 2 - 2;
+
+        const halfHeight =
+            CONFIG.PLAYER_HEIGHT / 2 - 2;
+
+        const left = x - halfWidth;
+        const right = x + halfWidth;
+
+        const top = y - halfHeight;
+        const bottom = y + halfHeight;
+
+
+        // Map boundaries
+
+        if (
+            left < 0 ||
+            top < 0 ||
+            right > world.width ||
+            bottom > world.height
+        ) {
+            return false;
+        }
+
+
+        // Water collision
+
+        const points = [
+
+            [left, top],
+
+            [right, top],
+
+            [left, bottom],
+
+            [right, bottom],
+
+            [x, bottom]
+
+        ];
+
+        for (const point of points) {
+
+            const tx = Math.floor(
+                point[0] / CONFIG.TILE_SIZE
+            );
+
+            const ty = Math.floor(
+                point[1] / CONFIG.TILE_SIZE
+            );
+
+            if (tileAt(tx, ty) === "water") {
+                return false;
+            }
+
+        }
+
+
+        // Object collision
+
+        for (const obstacle of world.collision) {
+
+            const obstacleLeft = obstacle.x;
+            const obstacleRight =
+                obstacle.x + obstacle.width;
+
+            const obstacleTop = obstacle.y;
+            const obstacleBottom =
+                obstacle.y + obstacle.height;
+
+            if (
+
+                right > obstacleLeft &&
+                left < obstacleRight &&
+                bottom > obstacleTop &&
+                top < obstacleBottom
+
+            ) {
+
+                return false;
+
+            }
+
+        }
+
+        return true;
+
+    }
+
+
+    // ======================================
+    // CAMERA UPDATE
+    // ======================================
+
+    function updateCamera(deltaTime) {
+
+        camera.targetX =
+            player.x - CONFIG.VIEW_WIDTH / 2;
+
+        camera.targetY =
+            player.y - CONFIG.VIEW_HEIGHT / 2;
+
+
+        camera.targetX = clamp(
+            camera.targetX,
+            0,
+            world.width - CONFIG.VIEW_WIDTH
+        );
+
+        camera.targetY = clamp(
+            camera.targetY,
+            0,
+            world.height - CONFIG.VIEW_HEIGHT
+        );
+
+
+        const smoothing =
+            1 - Math.pow(
+                1 - CONFIG.CAMERA_SMOOTHING,
+                deltaTime * 60
+            );
+
+        camera.x +=
+            (camera.targetX - camera.x) * smoothing;
+
+        camera.y +=
+            (camera.targetY - camera.y) * smoothing;
+
+    }
+
 
     // ======================================
     // DRAW MAP
     // ======================================
 
-    function drawMap(camera) {
+    function drawMap() {
 
-        ctx.fillStyle = "#101b24";
-
-        ctx.fillRect(
-            0,
-            0,
-            canvas.width,
-            canvas.height
+        const startX = Math.floor(
+            camera.x / CONFIG.TILE_SIZE
         );
 
-        if (!mapLoaded) {
+        const startY = Math.floor(
+            camera.y / CONFIG.TILE_SIZE
+        );
 
-            ctx.fillStyle = "#ffffff";
-            ctx.font = "16px Arial";
-            ctx.textAlign = "center";
+        const endX = Math.ceil(
+            (camera.x + CONFIG.VIEW_WIDTH) /
+            CONFIG.TILE_SIZE
+        );
 
-            ctx.fillText(
-                mapError
-                    ? "Unable to load village map"
-                    : "Loading Starting Village...",
-                canvas.width / 2,
-                canvas.height / 2
-            );
+        const endY = Math.ceil(
+            (camera.y + CONFIG.VIEW_HEIGHT) /
+            CONFIG.TILE_SIZE
+        );
 
-            return;
+
+        for (
+            let y = startY;
+            y <= endY;
+            y++
+        ) {
+
+            for (
+                let x = startX;
+                x <= endX;
+                x++
+            ) {
+
+                if (!inBounds(x, y)) {
+                    continue;
+                }
+
+                const screenX =
+                    x * CONFIG.TILE_SIZE - camera.x;
+
+                const screenY =
+                    y * CONFIG.TILE_SIZE - camera.y;
+
+                drawTile(
+                    tileAt(x, y),
+                    screenX,
+                    screenY
+                );
+
+            }
 
         }
 
-        ctx.imageSmoothingEnabled = false;
+    }
 
-        ctx.drawImage(
-            mapImage,
-            -camera.x,
-            -camera.y
-        );
+
+    // ======================================
+    // DEPTH SORTING
+    // ======================================
+
+    function getDepth(object) {
+
+        if (object.kind === "player") {
+
+            return object.y + 10;
+
+        }
+
+        return object.y + object.height;
 
     }
 
-    // ======================================
-    // DRAW CHARACTER
-    // ======================================
 
-    function drawCharacter(
-        x,
-        y,
-        name,
-        isLocal,
-        direction,
-        moving,
-        camera,
-        time
-    ) {
+    function drawDepthObjects() {
 
-        const screenX = Math.floor(x - camera.x);
-        const screenY = Math.floor(y - camera.y);
+        const visible = [];
 
-        const skin = isLocal
-            ? COLORS.playerSkin
-            : COLORS.remoteSkin;
 
-        const hair = isLocal
-            ? COLORS.playerHair
-            : COLORS.remoteHair;
+        for (const object of world.objects) {
 
-        const clothes = isLocal
-            ? COLORS.playerClothes
-            : COLORS.remoteClothes;
+            const screenX =
+                object.x - camera.x;
 
-        const dark = isLocal
-            ? COLORS.playerDark
-            : COLORS.remoteDark;
+            const screenY =
+                object.y - camera.y;
 
-        const frame = moving
-            ? Math.floor(time / 150) % 2
-            : 0;
+            if (
 
-        // Shadow
+                screenX + object.width < -32 ||
+                screenY + object.height < -32 ||
+                screenX > CONFIG.VIEW_WIDTH + 32 ||
+                screenY > CONFIG.VIEW_HEIGHT + 32
 
-        ctx.fillStyle = "rgba(0,0,0,0.4)";
+            ) {
+                continue;
+            }
 
-        ctx.fillRect(
-            screenX - 11,
-            screenY - 3,
-            22,
-            6
-        );
+            if (object.type === "grass_detail") {
 
-        // Legs
+                drawObject(object);
 
-        ctx.fillStyle = dark;
+                continue;
 
-        ctx.fillRect(
-            screenX - 7,
-            screenY - 11,
-            5,
-            9 + frame * 2
-        );
+            }
 
-        ctx.fillRect(
-            screenX + 2,
-            screenY - 11,
-            5,
-            9 + (1 - frame) * 2
-        );
+            visible.push({
 
-        // Boots
+                ...object,
 
-        ctx.fillStyle = "#302b2a";
+                kind: "object"
 
-        ctx.fillRect(
-            screenX - 8,
-            screenY - 3,
-            6,
-            3
-        );
+            });
 
-        ctx.fillRect(
-            screenX + 2,
-            screenY - 3,
-            7,
-            3
-        );
+        }
 
-        // Body
 
-        ctx.fillStyle = dark;
+        visible.push({
 
-        ctx.fillRect(
-            screenX - 8,
-            screenY - 24,
-            16,
-            15
-        );
+            ...player,
 
-        ctx.fillStyle = clothes;
+            kind: "player"
 
-        ctx.fillRect(
-            screenX - 7,
-            screenY - 23,
-            14,
-            12
-        );
+        });
 
-        // Blue scarf
 
-        ctx.fillStyle = "#28639b";
+        remotePlayers.forEach(remote => {
 
-        ctx.fillRect(
-            screenX - 6,
-            screenY - 23,
-            12,
-            4
-        );
+            if (
+                remote.map &&
+                remote.map !== getCurrentMap()
+            ) {
+                return;
+            }
 
-        // Arms
+            visible.push({
 
-        ctx.fillStyle = skin;
+                ...remote,
 
-        ctx.fillRect(
-            screenX - 10,
-            screenY - 21,
-            3,
-            9
-        );
+                kind: "remote"
 
-        ctx.fillRect(
-            screenX + 7,
-            screenY - 21,
-            3,
-            9
-        );
+            });
 
-        // Head
+        });
 
-        ctx.fillStyle = skin;
 
-        ctx.fillRect(
-            screenX - 7,
-            screenY - 36,
-            14,
-            13
-        );
+        visible.sort((a, b) => {
 
-        // Hair
+            return getDepth(a) - getDepth(b);
 
-        ctx.fillStyle = hair;
+        });
 
-        ctx.fillRect(
-            screenX - 8,
-            screenY - 38,
-            16,
-            7
-        );
 
-        ctx.fillRect(
-            screenX - 7,
-            screenY - 32,
-            3,
-            5
-        );
+        for (const object of visible) {
 
-        ctx.fillRect(
-            screenX + 4,
-            screenY - 32,
-            3,
-            5
-        );
+            if (object.kind === "object") {
 
-        // Face
+                drawObject({
 
-        if (direction !== "up") {
+                    ...object,
 
-            ctx.fillStyle = "#292929";
+                    x: object.x - camera.x,
+                    y: object.y - camera.y
 
-            if (direction === "left") {
+                });
 
-                ctx.fillRect(
-                    screenX - 4,
-                    screenY - 30,
-                    2,
-                    2
-                );
+            } else if (object.kind === "player") {
 
-            } else if (direction === "right") {
+                drawCharacter(
 
-                ctx.fillRect(
-                    screenX + 2,
-                    screenY - 30,
-                    2,
-                    2
+                    object,
+                    false
+
                 );
 
             } else {
 
-                ctx.fillRect(
-                    screenX - 4,
-                    screenY - 30,
-                    2,
-                    2
-                );
+                drawCharacter(
 
-                ctx.fillRect(
-                    screenX + 2,
-                    screenY - 30,
-                    2,
-                    2
+                    object,
+                    true
+
                 );
 
             }
 
         }
+
+    }
+
+
+    // ======================================
+    // CHARACTER RENDERER
+    // ======================================
+
+    function drawCharacter(character, remote) {
+
+        const x =
+            Math.floor(character.x - camera.x);
+
+        const y =
+            Math.floor(character.y - camera.y);
+
+
+        const direction =
+            character.direction || "down";
+
+        const moving =
+            character.moving === true;
+
+        const walkFrame =
+            moving
+                ? Math.floor(performance.now() / 150) % 2
+                : 0;
+
+        const legOffset =
+            walkFrame === 1 ? 1 : 0;
+
+
+        // Shadow
+
+        rect(
+            x - 7,
+            y + 9,
+            14,
+            4,
+            "rgba(0,0,0,0.3)"
+        );
+
+
+        // Legs
+
+        const legColor = "#59412e";
+
+        rect(
+            x - 5,
+            y + 3 + legOffset,
+            4,
+            8,
+            legColor
+        );
+
+        rect(
+            x + 1,
+            y + 3 - legOffset,
+            4,
+            8,
+            legColor
+        );
+
+
+        // Body
+
+        rect(
+            x - 6,
+            y - 7,
+            12,
+            12,
+            "#74523a"
+        );
+
+        rect(
+            x - 5,
+            y - 6,
+            10,
+            10,
+            "#9b704a"
+        );
+
+
+        // Blue scarf
+
+        rect(
+            x - 6,
+            y - 6,
+            12,
+            3,
+            "#315f91"
+        );
+
+        rect(
+            x + 3,
+            y - 4,
+            3,
+            7,
+            "#477eb2"
+        );
+
+
+        // Head
+
+        rect(
+            x - 5,
+            y - 16,
+            10,
+            10,
+            "#d6a879"
+        );
+
+
+        // Hair
+
+        rect(
+            x - 6,
+            y - 18,
+            12,
+            5,
+            "#70462e"
+        );
+
+        rect(
+            x - 6,
+            y - 14,
+            3,
+            4,
+            "#70462e"
+        );
+
+        rect(
+            x + 3,
+            y - 14,
+            3,
+            4,
+            "#70462e"
+        );
+
+
+        // Face
+
+        if (direction === "down") {
+
+            rect(
+                x - 3,
+                y - 10,
+                2,
+                2,
+                "#382c27"
+            );
+
+            rect(
+                x + 2,
+                y - 10,
+                2,
+                2,
+                "#382c27"
+            );
+
+        } else if (direction === "left") {
+
+            rect(
+                x - 5,
+                y - 10,
+                2,
+                2,
+                "#382c27"
+            );
+
+        } else if (direction === "right") {
+
+            rect(
+                x + 3,
+                y - 10,
+                2,
+                2,
+                "#382c27"
+            );
+
+        }
+
 
         // Player name
 
-        if (name) {
+        if (character.name) {
 
-            const label = String(name).slice(0, 20);
+            ctx.font = "6px monospace";
 
-            ctx.font = "12px Arial";
             ctx.textAlign = "center";
-            ctx.textBaseline = "middle";
 
-            const width = ctx.measureText(label).width;
-
-            ctx.fillStyle = "rgba(0,0,0,0.75)";
-
-            ctx.fillRect(
-                screenX - width / 2 - 5,
-                screenY - 55,
-                width + 10,
-                16
-            );
-
-            ctx.fillStyle = isLocal
-                ? "#ffe39b"
-                : "#ffffff";
+            ctx.fillStyle = "#000000";
 
             ctx.fillText(
-                label,
-                screenX,
-                screenY - 47
+                character.name,
+                x + 1,
+                y - 22
+            );
+
+            ctx.fillStyle =
+                remote ? "#b7d9ff" : "#ffe5ae";
+
+            ctx.fillText(
+                character.name,
+                x,
+                y - 23
             );
 
         }
 
     }
 
-    // ======================================
-    // DRAW LOCAL PLAYER
-    // ======================================
-
-    function drawLocalPlayer(camera, time) {
-
-        drawCharacter(
-            player.x,
-            player.y,
-            player.name,
-            true,
-            player.direction,
-            player.moving,
-            camera,
-            time
-        );
-
-    }
-
-    // ======================================
-    // DRAW REMOTE PLAYERS
-    // ======================================
-
-    function drawRemotePlayers(camera, time) {
-
-        const localId = getLocalPlayerId();
-
-        const game = getGame();
-
-        const localMap =
-            game?.player?.map ||
-            game?.player?.map_id;
-
-        for (const remote of getRemotePlayers()) {
-
-            if (!remote || remote.id === localId) {
-                continue;
-            }
-
-            if (
-                !Number.isFinite(Number(remote.x)) ||
-                !Number.isFinite(Number(remote.y))
-            ) {
-                continue;
-            }
-
-            const remoteMap =
-                remote.map ||
-                remote.map_id;
-
-            if (
-                remoteMap &&
-                localMap &&
-                remoteMap !== localMap
-            ) {
-                continue;
-            }
-
-            drawCharacter(
-                Number(remote.x),
-                Number(remote.y),
-                remote.name || "Adventurer",
-                false,
-                remote.direction || "down",
-                remote.moving === true,
-                camera,
-                time
-            );
-
-        }
-
-    }
 
     // ======================================
     // RENDER
     // ======================================
 
-    function render(timestamp = 0) {
+    function render(time) {
 
-        if (!running || !ctx || !canvas) {
-            return;
-        }
+        if (!running) return;
 
-        ctx.clearRect(
+        const deltaTime =
+            Math.min(
+                (time - lastFrame) / 1000,
+                0.05
+            );
+
+        lastFrame = time;
+
+
+        updateCamera(deltaTime);
+
+
+        ctx.imageSmoothingEnabled = false;
+
+
+        // Background
+
+        rect(
             0,
             0,
-            canvas.width,
-            canvas.height
+            CONFIG.VIEW_WIDTH,
+            CONFIG.VIEW_HEIGHT,
+            CONFIG.BACKGROUND
         );
 
-        const camera = getCamera();
 
-        drawMap(camera);
+        // Map
 
-        if (mapLoaded) {
+        drawMap();
 
-            drawRemotePlayers(camera, timestamp);
 
-            drawLocalPlayer(camera, timestamp);
+        // Objects + Characters
 
-        }
+        drawDepthObjects();
 
-        animationFrame = requestAnimationFrame(render);
+
+        animationFrame =
+            requestAnimationFrame(render);
 
     }
+
 
     // ======================================
     // INITIALIZE
@@ -788,31 +1898,73 @@ window.ECHO_WORLD_RENDERER = (() => {
 
     function init() {
 
-        canvas = document.getElementById("game-canvas");
+        if (initialized) return true;
+
+
+        canvas =
+            document.getElementById("game-canvas") ||
+            document.querySelector("canvas");
+
 
         if (!canvas) {
 
             console.error(
-                "[WORLD RENDERER] Canvas not found"
+                "[WORLD] Game canvas not found"
             );
 
             return false;
 
         }
 
-        ctx = canvas.getContext("2d");
+
+        ctx = canvas.getContext("2d", {
+
+            alpha: false,
+
+            desynchronized: true
+
+        });
+
 
         if (!ctx) {
+
+            console.error(
+                "[WORLD] Canvas context unavailable"
+            );
+
             return false;
+
         }
+
+
+        canvas.width = CONFIG.VIEW_WIDTH;
+
+        canvas.height = CONFIG.VIEW_HEIGHT;
+
+        canvas.style.imageRendering = "pixelated";
+
+        canvas.style.imageRendering = "crisp-edges";
+
 
         ctx.imageSmoothingEnabled = false;
 
-        loadMap();
+
+        generateWorld();
+
+
+        initialized = true;
+
+
+        console.log(
+            "[WORLD] Renderer initialized:",
+            CONFIG.VERSION
+        );
+
 
         return true;
 
     }
+
 
     // ======================================
     // START
@@ -820,27 +1972,27 @@ window.ECHO_WORLD_RENDERER = (() => {
 
     function start() {
 
-        if (!canvas || !ctx) {
-
-            if (!init()) {
-                return false;
-            }
-
+        if (!initialized && !init()) {
+            return false;
         }
 
-        if (running) {
-            return true;
-        }
+        if (running) return true;
+
 
         running = true;
 
-        render();
+        lastFrame = performance.now();
 
-        console.log("[WORLD RENDERER] Started");
+        animationFrame =
+            requestAnimationFrame(render);
+
+
+        console.log("[WORLD] Started");
 
         return true;
 
     }
+
 
     // ======================================
     // STOP
@@ -858,46 +2010,33 @@ window.ECHO_WORLD_RENDERER = (() => {
 
         }
 
-        console.log("[WORLD RENDERER] Stopped");
+        console.log("[WORLD] Stopped");
 
     }
 
+
     // ======================================
-    // UPDATE LOCAL PLAYER
+    // UPDATE PLAYER
     // ======================================
 
-    function updatePlayer(data = {}) {
+    function updatePlayer(data) {
 
-        const nextX = Number.isFinite(Number(data.x))
-            ? Number(data.x)
-            : player.x;
+        if (!data) return;
 
-        const nextY = Number.isFinite(Number(data.y))
-            ? Number(data.y)
-            : player.y;
-
-        // ตรวจสอบตำแหน่งใหม่ก่อนเปลี่ยนตำแหน่ง
-        if (
-            mapLoaded &&
-            collisionPixels &&
-            !canMoveTo(nextX, nextY)
-        ) {
-
-            player.moving = false;
-
-            return false;
-
-        }
-
-        player.x = nextX;
-        player.y = nextY;
-
-        if (data.name) {
-            player.name = data.name;
-        }
-
-        if (data.id) {
+        if (data.id !== undefined) {
             player.id = data.id;
+        }
+
+        if (Number.isFinite(data.x)) {
+            player.x = data.x;
+        }
+
+        if (Number.isFinite(data.y)) {
+            player.y = data.y;
+        }
+
+        if (data.name !== undefined) {
+            player.name = data.name;
         }
 
         if (data.direction) {
@@ -908,9 +2047,8 @@ window.ECHO_WORLD_RENDERER = (() => {
             player.moving = data.moving;
         }
 
-        return true;
-
     }
+
 
     // ======================================
     // UPDATE REMOTE PLAYER
@@ -918,36 +2056,63 @@ window.ECHO_WORLD_RENDERER = (() => {
 
     function updateRemotePlayer(data) {
 
-        const game = getGame();
+        if (!data?.id) return;
 
-        if (!game || !game.world || !data || !data.id) {
-            return;
-        }
+        if (data.id === player.id) return;
 
-        if (!(game.world.players instanceof Map)) {
-            game.world.players = new Map();
-        }
 
-        game.world.players.set(data.id, {
-            ...game.world.players.get(data.id),
-            ...data
+        const previous =
+            remotePlayers.get(data.id) || {};
+
+
+        remotePlayers.set(data.id, {
+
+            ...previous,
+
+            ...data,
+
+            x: Number.isFinite(data.x)
+                ? data.x
+                : previous.x || 0,
+
+            y: Number.isFinite(data.y)
+                ? data.y
+                : previous.y || 0,
+
+            direction:
+                data.direction ||
+                previous.direction ||
+                "down"
+
         });
 
     }
+
 
     // ======================================
     // REMOVE REMOTE PLAYER
     // ======================================
 
-    function removeRemotePlayer(playerId) {
+    function removeRemotePlayer(id) {
 
-        const game = getGame();
-
-        if (game?.world?.players instanceof Map) {
-            game.world.players.delete(playerId);
-        }
+        remotePlayers.delete(id);
 
     }
+
+
+    // ======================================
+    // MAP ID
+    // ======================================
+
+    function getCurrentMap() {
+
+        return (
+            window.ECHO_GAME?.world?.currentMap ||
+            "starting_village"
+        );
+
+    }
+
 
     // ======================================
     // PUBLIC API
@@ -956,11 +2121,15 @@ window.ECHO_WORLD_RENDERER = (() => {
     return {
 
         init,
+
         start,
+
         stop,
 
         updatePlayer,
+
         updateRemotePlayer,
+
         removeRemotePlayer,
 
         canMoveTo,
@@ -974,12 +2143,30 @@ window.ECHO_WORLD_RENDERER = (() => {
         },
 
         get mapLoaded() {
-            return mapLoaded;
+            return world.generated;
         },
 
-        get collisionReady() {
-            return !!collisionPixels;
-        }
+        get camera() {
+            return { ...camera };
+        },
+
+        get world() {
+            return {
+
+                width: world.width,
+
+                height: world.height,
+
+                objects: world.objects.length
+
+            };
+        },
+
+        get remotePlayers() {
+            return remotePlayers;
+        },
+
+        CONFIG
 
     };
 
